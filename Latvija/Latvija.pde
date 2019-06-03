@@ -1,6 +1,6 @@
 
 Table table;
-String [][] test = new String[28][5];
+String [][] test = new String[29][8];
 PImage latvia_map_img;
 
 void setup() {
@@ -11,7 +11,7 @@ void setup() {
      latvia_map_img.resize(displayWidth, displayHeight);
   //size (600,600); 
 
-  table = loadTable("Latvijasdatieksports.csv", "header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
+  table = loadTable("populacija.csv","header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
  println(table.getRowCount() + " total rows in table");
    
  image(latvia_map_img, 0, 0);
