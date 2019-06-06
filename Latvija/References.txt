@@ -1,0 +1,19 @@
+1. PAR APLIKÂCIJAS SÂKUMU UN BEIGÂM
+(Varçtu Sâkties ar melnu laukumu, kur parâdâs smooth punkti - uzzîmçjas karte. tad izspçlçjas dati un lîdz melnam laukumam)
+
+2. KAD SÂKAS DATU IETEKME, ka izzûd pa reìioniem
+(vai var uztaisît tâ ka punktiietekmçjoties no datiem paceïas un izpeld no kadra - tâdâ virzienâ kurâ tajâ brîdî ir kartes priekðçjâ plakne?)
+
+
+2. PAR KUSTÎBU
+- Man patîk tâ smooth kustîba ar peli - skaisti! 
+Mierîgi var uzlikt random kodu, ka pietuvinâs ïoti tuvu attâlinâs ïoti maza karte un rotç lçnâm ap asi, vai slîd no vienas puses uz otru pâri kartei
+(Max smooth, max daudzas variâcijas) 
+Var arî pietuvinâties ïoti tuvu - max xlose-up  tâ, ka iziet ârâ no kadra kâda mala  
+
+3. PAR KARTI, 
+Forði ka bumbiòas ir 3D telpiskas! 
+vai ir iespçjams (vai nu pa reìioniem, vai random daþu punktu atraðanos pacelt pa asi uz augðu- lai veidojas telpiskums? 
+TO VAR ARÎ PÇC DATU LASÎÐANAS vnk ar animâciju - ka sâkumâ uzzîmçjâs 2 D plakne- un  lçni paceïas punkti (rodas telpiskums) - pçc tam  iziet no kadra pa visam   
+ un  sâkas datu ietekme - tie varçtu  lçnâm sâk veidot telpisku formu - lçnâm vietâm pacelties priekðçjâ plaknç un izziet pa visam ârâ no kadra 
+  
