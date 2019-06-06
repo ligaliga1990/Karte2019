@@ -16,7 +16,7 @@ int columns = 0;
 int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
-int sphere_detail_nr = 30;
+int sphere_detail_nr = 20;
 
 float app_width = 0;
 float app_height = 0;
@@ -80,6 +80,12 @@ void get_dots() {
 void draw() {
   background(#000000);
   draw_dots();
+  camera.beginHUD(); // start drawing relative to the camera view
+  fill(255);
+  rect(20, 10, 120, 30);
+  fill(0);
+  text(str(frameRate), 30, 30);
+  camera.endHUD();  // and don't forget to stop/close with this!
 }
 
 
