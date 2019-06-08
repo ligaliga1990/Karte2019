@@ -6,31 +6,44 @@ import de.looksgood.ani.*;
 import de.looksgood.ani.easing.*;
 
 
-// Debug settings
-boolean mouse_actions = true;
-
-
 PeasyCam camera;
 Table table;
 PImage latvia_map_img;
+
+// define images
+String Latvia_img = "images/latvia_map.png";
+
+// define animations
+interface Z_ANIMS {
+  int
+  NONE         = 0,
+  JUMP         = 1, 
+  SPHERE_IT    = 2;
+}
+
+int z_animation = Z_ANIMS.NONE;
+int z_random_distance = 10;
+
+
+
 
 // app settings
 float app_width;
 float app_height;
 int rows;
 int columns;
+Scene active_scene;
 
 // sphere data and offsets
 int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
-int max_z_start_position = 1;
 
 
 int next_scene_interval = 60 * 1000; // 60 sec
-double max_total_people;
-double people_per_dot;
+int max_total_people;
+int people_per_dot;
 
 
 ArrayList<Dot> dots = new ArrayList<Dot>();
@@ -58,8 +71,10 @@ void setup() {
   println("Screen Size width: " + app_width);
   println("Screen Size height: " + app_height);
 
-  latvia_map_img = loadImage("images/latvia_map.png");
+  latvia_map_img = loadImage(Latvia_img);
   latvia_map_img.resize(displayWidth, displayHeight);
+  
+  
 
   println("Image width: " + latvia_map_img.width);
   println("Image height: " + latvia_map_img.height);
@@ -85,6 +100,7 @@ void setup() {
   people_per_dot = people_per_dot / divider;
 
   println("peopel per dot diveded by " + divider + ": " + people_per_dot);
+  set_active_scene(0);
 }
 
 void load_data() {
@@ -117,6 +133,8 @@ void load_data() {
       }
     }
   }
+  
+  active_scene = scenes.get(0);
 }
 
 Scene create_scene(TableRow row) {
@@ -132,13 +150,19 @@ Scene create_scene(TableRow row) {
   return scene;
 }
 
+void set_active_scene(int index) {
+ active_scene = scenes.get(index);
+ process_active_scene_data();
+}
+
 void get_dots() {
   for(int row = 0; row <= rows; row = row + 1)  { // // row = vertikālais daudzums
     for (int col = 0; col <= columns; col = col + 1) { // col = horizontālais daudzums
       int x = parseInt(offset + (default_radius * 2 + space) * col); // horizontālais atstatums
       int y = parseInt(offset + (default_radius * 2 + space) * row); // vertikālais` atstatums
-      int z = 0;
-      PVector pos = new PVector(x , y, random(1, max_z_start_position));
+      int z = 1;
+      
+      PVector pos = new PVector(x , y, z);
 
       if(latvia_map_img.width < pos.x || latvia_map_img.height - 30 < pos.y) continue;
 
@@ -155,6 +179,10 @@ void draw() {
   background(#000000);
   draw_dots();
 
+  draw_labels();
+}
+
+void draw_labels() {
   camera.beginHUD(); // start drawing relative to the camera view
   fill(255);
   rect(20, 10, 120, 30);
@@ -164,7 +192,31 @@ void draw() {
 }
 
 
-
+void process_active_scene_data() {
+  boolean remove = (active_scene.change < 0);
+  int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
+  println("changable_dots "+ changable_dots);
+  
+  while (changable_dots > 0) {
+    int dot_index = parseInt(random(0, dots.size()));
+    boolean decrease = false;
+    if(remove) {
+      if (!dots.get(dot_index).disapear) {
+        dots.get(dot_index).disapear = true;
+        decrease = true;
+        //println("disapear "+ dots.get(dot_index).disapear);
+      }
+    } else {
+      if( dots.get(dot_index).reapear ) {
+        // TODO: get disapear list
+        dots.get(dot_index).reapear = true;
+        decrease = true;
+      }
+    }
+    
+    if (decrease) changable_dots --;
+  }
+}
 
 
 int calculate_rows() {
@@ -261,41 +313,77 @@ class Dot {
   public int y;
   public int z;
 
+  public PVector orignal;
   public PVector pos;
   public PVector target;
 
   public int radius;
   public boolean disapear = false;
+  public boolean reapear = false;
   public boolean animation_done = true;
-  Ani zAnimation;
+  Ani zDisapear;
+  Ani zAppear;
+  
+  float duration = random(7, 20);
+  float the_delay = random(0, 10);
+  
 
   Dot(int a, PVector pos, int r) {
     this.alpha = a;
+    this.orignal = pos;
     this.pos = pos;
     this.radius = r;
-
-    this.target = new PVector(this.pos.x, this.pos.y, 50);
-    zAnimation = new Ani(this, random(3,5), 0.5, "z", this.target.z, Ani.QUART_OUT, "onEnd:finish_anim");
+    this.x = parseInt(pos.x);
+    this.y = parseInt(pos.y);
+    this.z = parseInt(pos.z);
   }
-
-  public void finish_anim(Ani anim) {
-    println(pos);
-    println(target);
-    this.pos = this.target;
-    this.x = parseInt(this.target.x);
-    this.y = parseInt(this.target.y);
-    this.z = parseInt(this.target.z);
+  
+  public void z_startup_position() {
+    switch (z_animation) {
+     case 1:
+       this.pos.z = random(1, z_random_distance);
+     break;
+     default:
+       //do nothing
+    }
   }
 
   public void draw() {
-    drawSphere(this.pos, this.radius);
+    if (!this.disapear && !this.reapear) z_startup_position();
+    if(this.disapear && animation_done) this.disapear();
+    else if(this.reapear) this.reapear();
+    
+    // draws a sphere at x,y,z with size sizeSphere
+    pushMatrix();
+    noStroke();
+    
+    if (disapear && animation_done ) fill(#000000);
+    else fill(#ffffff);
+    
+    translate(x, y, z);
+    sphereDetail(sphere_detail_nr);
+    sphere(radius);
+    popMatrix();
   }
 
   public void disapear() {
     this.disapear = true;
+    this.animation_done = false;
+    this.target = new PVector(this.pos.x, this.pos.y, 3000);
+    zDisapear = new Ani(this, duration, the_delay, "z", target.z, Ani.EXPO_IN_OUT, "onEnd:finish_anim");
   }
 
   public void reapear() {
-    this.disapear = true;
+    this.reapear = true;
+    this.disapear = false;
+    this.zAppear = new Ani(this, duration, 1, "z", this.target.z, Ani.ELASTIC_IN);
+  }
+  
+  void finish_anim(Ani anim) {
+    this.pos = this.target;
+    this.x = parseInt(this.target.x);
+    this.y = parseInt(this.target.y);
+    this.z = parseInt(this.target.z);
+    this.animation_done = true;
   }
 }
