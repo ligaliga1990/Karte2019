@@ -2,6 +2,9 @@ import peasy.org.apache.commons.math.*;
 import peasy.*;
 import peasy.org.apache.commons.math.geometry.*;
 
+import de.looksgood.ani.*;
+import de.looksgood.ani.easing.*;
+
 
 // Debug settings
 boolean mouse_actions = true;
@@ -22,7 +25,7 @@ int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
-int max_z_start_position = 50;
+int max_z_start_position = 1;
 
 
 int next_scene_interval = 60 * 1000; // 60 sec
@@ -34,8 +37,19 @@ ArrayList<Dot> dots = new ArrayList<Dot>();
 ArrayList<Scene> scenes = new ArrayList<Scene>();
 
 
+Easing[] easings = { 
+  Ani.LINEAR, Ani.QUAD_IN, Ani.QUAD_OUT, Ani.QUAD_IN_OUT, Ani.CUBIC_IN, Ani.CUBIC_IN_OUT, Ani.CUBIC_OUT, Ani.QUART_IN, Ani.QUART_OUT, Ani.QUART_IN_OUT, Ani.QUINT_IN, Ani.QUINT_OUT, Ani.QUINT_IN_OUT, Ani.SINE_IN, Ani.SINE_OUT, Ani.SINE_IN_OUT, Ani.CIRC_IN, Ani.CIRC_OUT, Ani.CIRC_IN_OUT, Ani.EXPO_IN, Ani.EXPO_OUT, Ani.EXPO_IN_OUT, Ani.BACK_IN, Ani.BACK_OUT, Ani.BACK_IN_OUT, Ani.BOUNCE_IN, Ani.BOUNCE_OUT, Ani.BOUNCE_IN_OUT, Ani.ELASTIC_IN, Ani.ELASTIC_OUT, Ani.ELASTIC_IN_OUT
+};
+
+int anim_index = 26;
+Easing currentEasing = easings[anim_index];
+
+
 void setup() {
   fullScreen(P3D);
+
+  // Ani.init() must be called always first!
+  Ani.init(this);
 
   // Define screen dimensions with offset
   app_width = displayWidth - offset;
@@ -243,16 +257,45 @@ class Scene {
 
 class Dot {
   public int alpha;
+  public int x;
+  public int y;
+  public int z;
+
   public PVector pos;
+  public PVector target;
+
   public int radius;
+  public boolean disapear = false;
+  public boolean animation_done = true;
+  Ani zAnimation;
 
   Dot(int a, PVector pos, int r) {
     this.alpha = a;
     this.pos = pos;
     this.radius = r;
+
+    this.target = new PVector(this.pos.x, this.pos.y, 50);
+    zAnimation = new Ani(this, random(3,5), 0.5, "z", this.target.z, Ani.QUART_OUT, "onEnd:finish_anim");
+  }
+
+  public void finish_anim(Ani anim) {
+    println(pos);
+    println(target);
+    this.pos = this.target;
+    this.x = parseInt(this.target.x);
+    this.y = parseInt(this.target.y);
+    this.z = parseInt(this.target.z);
   }
 
   public void draw() {
     drawSphere(this.pos, this.radius);
+  }
+
+  public void disapear() {
+    this.disapear = true;
+  }
+
+  public void reapear() {
+    this.disapear = true;
   }
 }
