@@ -22,6 +22,7 @@ int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
+int max_z_start_position = 50;
 
 
 int next_scene_interval = 60 * 1000; // 60 sec
@@ -123,7 +124,7 @@ void get_dots() {
       int x = parseInt(offset + (default_radius * 2 + space) * col); // horizontālais atstatums
       int y = parseInt(offset + (default_radius * 2 + space) * row); // vertikālais` atstatums
       int z = 0;
-      PVector pos = new PVector(x , y + z);
+      PVector pos = new PVector(x , y, random(1, max_z_start_position));
 
       if(latvia_map_img.width < pos.x || latvia_map_img.height - 30 < pos.y) continue;
 
@@ -139,6 +140,7 @@ void get_dots() {
 void draw() {
   background(#000000);
   draw_dots();
+
   camera.beginHUD(); // start drawing relative to the camera view
   fill(255);
   rect(20, 10, 120, 30);
