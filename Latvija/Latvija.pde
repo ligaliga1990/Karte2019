@@ -3,29 +3,35 @@ import peasy.*;
 import peasy.org.apache.commons.math.geometry.*;
 
 
+// Debug settings
+boolean mouse_actions = true;
+
+
 PeasyCam camera;
 Table table;
-
-String [][] test = new String[29][8];
 PImage latvia_map_img;
 
+// app settings
+float app_width;
+float app_height;
+int rows;
+int columns;
 
-int rows = 0;
-int columns = 0;
-
+// sphere data and offsets
 int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
 
-float app_width = 0;
-float app_height = 0;
+
+int next_scene_interval = 60 * 1000; // 60 sec
+double max_total_people;
+double people_per_dot;
 
 
 ArrayList<Dot> dots = new ArrayList<Dot>();
+ArrayList<Scene> scenes = new ArrayList<Scene>();
 
-
-boolean mouse_actions = true;
 
 void setup() {
   fullScreen(P3D);
@@ -37,15 +43,11 @@ void setup() {
   println("Screen Size width: " + app_width);
   println("Screen Size height: " + app_height);
 
-  latvia_map_img = loadImage("latvia_map.png");
+  latvia_map_img = loadImage("images/latvia_map.png");
   latvia_map_img.resize(displayWidth, displayHeight);
 
   println("Image width: " + latvia_map_img.width);
   println("Image height: " + latvia_map_img.height);
-
-  table = loadTable("populacija.csv","header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
-  println(table.getRowCount() + " total rows in table");
-  println(table.getColumnCount() + " total rows in table");
 
   // Add 3D world camera
   camera = new PeasyCam(this, displayWidth / 2, displayHeight / 2, 0, 1000);
@@ -55,22 +57,79 @@ void setup() {
   calculate_rows();
   calculate_columns();
 
+  load_data();
   get_dots();
 
+  if (dots.size() > 0) people_per_dot = max_total_people / dots.size();
+
+  println("dots: " + dots.size());
+  println("max total people: " + max_total_people);
+  println("peopel per dot: " + people_per_dot);
+
+  int divider = 2;
+  people_per_dot = people_per_dot / divider;
+
+  println("peopel per dot diveded by " + divider + ": " + people_per_dot);
+}
+
+void load_data() {
+  println("==> Load data:");
+  table = loadTable("data/data.csv","header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
+
+  int columns = table.getColumnCount();
+  int rows = table.getRowCount();
+
+  println(rows + " total rows in table");
+  println(columns + " total rows in table");
+
+  for (TableRow row : table.rows()) {
+    String name = row.getString("NAME");
+    String parent = row.getString("PARENT");
+    int year = row.getInt("YEAR");
+
+    if (parent.length() == 0) {
+      Scene new_scene = create_scene(row);
+      scenes.add(new_scene);
+      if (max_total_people < new_scene.total) {
+        max_total_people = new_scene.total;
+      }
+    } else {
+      for (Scene scene: scenes) {
+        if(scene.name == parent && scene.year == year) {
+          Scene new_child_scene = create_scene(row);
+          scene.add_child_scene(new_child_scene);
+        }
+      }
+    }
+  }
+}
+
+Scene create_scene(TableRow row) {
+  Scene scene = new Scene(row.getInt("ID"));
+  scene.set_name(row.getString("NAME"));
+  scene.set_parent(row.getString("PARENT"));
+  scene.set_year(row.getInt("YEAR"));
+  scene.set_total(row.getInt("TOTAL"));
+  scene.set_increase(row.getInt("INCREASE"));
+  scene.set_migration(row.getInt("MIGRATION"));
+  scene.set_change(row.getInt("CHANGE"));
+
+  return scene;
 }
 
 void get_dots() {
-  for(int row = 0; row <= rows; row = row + 1)  { // // skaitlis = horizontālais daudzums
-    for (int col = 0; col <= columns; col = col + 1) { // skaitlis ir vertikālais daudzums
+  for(int row = 0; row <= rows; row = row + 1)  { // // row = vertikālais daudzums
+    for (int col = 0; col <= columns; col = col + 1) { // col = horizontālais daudzums
       int x = parseInt(offset + (default_radius * 2 + space) * col); // horizontālais atstatums
       int y = parseInt(offset + (default_radius * 2 + space) * row); // vertikālais` atstatums
       int z = 0;
+      PVector pos = new PVector(x , y + z);
 
-      if(latvia_map_img.width < x || latvia_map_img.height - 30 < y) continue;
+      if(latvia_map_img.width < pos.x || latvia_map_img.height - 30 < pos.y) continue;
 
       int alpha = get_coord_alpha_value(latvia_map_img, x, y);
       if (alpha < 100) {
-        dots.add(new Dot(alpha, x, y, z, default_radius));
+        dots.add(new Dot(alpha, pos, default_radius));
       }
     }
   }
@@ -116,31 +175,82 @@ void draw_dots() {
   }
 }
 
-void spherePosition(float x, float y, float z, float sizeSphere) {
+
+void drawSphere(PVector pos, int radius) {
   // draws a sphere at x,y,z with size sizeSphere
   pushMatrix();
   noStroke();
   fill(#ffffff);
-  translate(x, y, z);
+  translate(pos.x, pos.y, pos.z);
   sphereDetail(sphere_detail_nr);
-  sphere(sizeSphere);
+  sphere(radius);
   popMatrix();
 }
 
+
+class Scene {
+  public int id;
+  public int year;
+  public String name;
+  public String parent;
+
+  public int total;
+  public int increase;
+  public int migration;
+  public int change;
+
+  ArrayList<Scene> child_scenes = new ArrayList<Scene>();
+
+  Scene(int id) {
+    this.id = id;
+  }
+
+  void set_name(String name) {
+    this.name = name;
+  }
+
+  void set_parent(String parent) {
+    this.parent = parent;
+  }
+
+  void set_year(int year) {
+    this.year = year;
+  }
+
+  void set_total(int total) {
+    this.total = total;
+  }
+
+  void set_increase(int increase) {
+    this.increase = increase;
+  }
+
+  void set_migration(int migration) {
+    this.migration = migration;
+  }
+
+  void set_change(int change) {
+    this.change = change;
+  }
+
+  void add_child_scene(Scene child_scene) {
+    child_scenes.add(child_scene);
+  }
+}
+
+
 class Dot {
   public int alpha;
-  public int x, y, z;
+  public PVector pos;
   public int radius;
 
-  Dot(int a, int x, int y, int z, int r) {
+  Dot(int a, PVector pos, int r) {
     this.alpha = a;
-    this.x = x;
-    this.y = y;
-    this.z = z;
+    this.pos = pos;
     this.radius = r;
   }
 
   public void draw() {
-    spherePosition(this.x, this.y, this.z, this.radius);
+    drawSphere(this.pos, this.radius);
   }
 }
