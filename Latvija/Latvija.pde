@@ -178,7 +178,6 @@ void get_dots() {
 void draw() {
   background(#000000);
   draw_dots();
-
   draw_labels();
 }
 
@@ -194,7 +193,7 @@ void draw_labels() {
 
 void process_active_scene_data() {
   boolean remove = (active_scene.change < 0);
-  int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
+  int changable_dots = 1; //abs(parseInt(active_scene.change) / parseInt(people_per_dot));
   println("changable_dots "+ changable_dots);
   
   while (changable_dots > 0) {
@@ -239,8 +238,14 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 void draw_dots() {
   // The second is using an enhanced loop:
   ambientLight(255, 255, 255);
+  boolean go_to_next_scene = true;
   for (Dot dot : dots) {
     dot.draw();
+    if(!dot.animation_done) go_to_next_scene = false;
+  }
+  
+  if (go_to_next_scene) {
+    
   }
 }
 
@@ -358,8 +363,12 @@ class Dot {
     pushMatrix();
     noStroke();
     
-    if (disapear == 2 && animation_done ) fill(alpha(255));
-    else fill(#ffffff);
+    if (disapear == 2 && animation_done ) fill(#ffffff, alpha(255));
+    else if (disapear == 1) { 
+      int map_v = parseInt(map(z, 0, 1500, 255, 0));
+      println("z: " + z + " map: " + map_v );
+      fill(#ffffff, map_v);
+    } else fill(#ffffff);
     
     translate(x, y, z);
     sphereDetail(sphere_detail_nr);
