@@ -1,0 +1,24 @@
+SÂKUMS UN BEIGAS
+Aplikâcijas sâkumâ karte parâdâs tâpat kâ Latvija pa vienam punktiòam (var no daþâdâm vietâm vienlaicîgi)âtri uzzîmçjas/
+un kad sasniedz 2100 gadu - izdziest viss info no daþâdâm malâm
+(visi dati lîdz 2100 gadam csv failos mapç)
+
+1.ANIMÂCIJA -tâda pati kâ LV, 
+Leìenda tâda pati (pievienoju skici, tikai printçjâs gads, kop. pop. skaits , kontinenti un valstis)
+(3/4 telpiski pagriezieni, slîd pâri kartei utt. - kâdâ brîdi lai var nolasît kas tas ir) :)
+
+2. Dati (pievienoti csv)
+-Valstis_pasaules_dati (tur vnk ðaujâs baltas bumbas pçc datiem - sâkumpunkts 1990 gads )
+-Kontinenti_pasaules_dati
+(3 apdzîvotâkâs valstis China, India, USA un karadarbibas valstis Afghanistan, Somalia, Rwanda, Syria )
+
+3. Leìenda paliek kâ ir nolasa vnk datus no kontinentiem un tâm 6 valstîm
+
+- Palielinoties populâcijai  - veidojas tornis no bumbiòâm un izlec lodziòð ar skaitli (skice)
+
+3. Pasaule aug, blîvsms palielina; veidojas jauna sleja virs kartes - bumbiòa virs bumbiòas- aug tornis)
+skici pievienoju
+
+
+
+
