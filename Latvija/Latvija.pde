@@ -32,6 +32,7 @@ float app_width;
 float app_height;
 int rows;
 int columns;
+int active_scene_index = 0;
 Scene active_scene;
 
 // sphere data and offsets
@@ -73,8 +74,8 @@ void setup() {
 
   latvia_map_img = loadImage(Latvia_img);
   latvia_map_img.resize(displayWidth, displayHeight);
-  
-  
+
+
 
   println("Image width: " + latvia_map_img.width);
   println("Image height: " + latvia_map_img.height);
@@ -133,7 +134,7 @@ void load_data() {
       }
     }
   }
-  
+
   active_scene = scenes.get(0);
 }
 
@@ -151,8 +152,9 @@ Scene create_scene(TableRow row) {
 }
 
 void set_active_scene(int index) {
- active_scene = scenes.get(index);
- process_active_scene_data();
+  active_scene_index = index;
+  active_scene = scenes.get(index);
+  process_active_scene_data();
 }
 
 void get_dots() {
@@ -161,7 +163,7 @@ void get_dots() {
       int x = parseInt(offset + (default_radius * 2 + space) * col); // horizontālais atstatums
       int y = parseInt(offset + (default_radius * 2 + space) * row); // vertikālais` atstatums
       int z = 1;
-      
+
       PVector pos = new PVector(x , y, z);
 
       if(latvia_map_img.width < pos.x || latvia_map_img.height - 30 < pos.y) continue;
@@ -193,9 +195,9 @@ void draw_labels() {
 
 void process_active_scene_data() {
   boolean remove = (active_scene.change < 0);
-  int changable_dots = 1; //abs(parseInt(active_scene.change) / parseInt(people_per_dot));
+  int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
   println("changable_dots "+ changable_dots);
-  
+
   while (changable_dots > 0) {
     int dot_index = parseInt(random(0, dots.size()));
     boolean decrease = false;
@@ -212,7 +214,7 @@ void process_active_scene_data() {
         decrease = true;
       }
     }
-    
+
     if (decrease) changable_dots --;
   }
 }
@@ -235,6 +237,14 @@ int get_coord_alpha_value(PImage img, int x, int y) {
   return t_alpha_value;
 }
 
+void load_next_scene() {
+  int next_active_scene_index =  active_scene_index + 1;
+  if (next_active_scene_index > scenes.size()) {
+    next_active_scene_index = 0;
+  }
+  set_active_scene(next_active_scene_index);
+}
+
 void draw_dots() {
   // The second is using an enhanced loop:
   ambientLight(255, 255, 255);
@@ -243,9 +253,9 @@ void draw_dots() {
     dot.draw();
     if(!dot.animation_done) go_to_next_scene = false;
   }
-  
+
   if (go_to_next_scene) {
-    
+    load_next_scene();
   }
 }
 
@@ -329,10 +339,10 @@ class Dot {
   public boolean animation_done = true;
   Ani zDisapear;
   Ani zAppear;
-  
+
   float duration = random(7, 20);
   float the_delay = random(0, 10);
-  
+
 
   Dot(int a, PVector pos, int r) {
     this.alpha = a;
@@ -343,7 +353,7 @@ class Dot {
     this.y = parseInt(pos.y);
     this.z = parseInt(pos.z);
   }
-  
+
   public void z_startup_position() {
     switch (z_animation) {
      case 1:
@@ -358,18 +368,18 @@ class Dot {
     if (this.disapear == 0 && this.reapear == 0) z_startup_position();
     if(this.disapear == 1 && animation_done) this.disapear();
     else if(this.reapear == 1 && animation_done) this.reapear();
-    
+
     // draws a sphere at x,y,z with size sizeSphere
     pushMatrix();
     noStroke();
-    
+
     if (disapear == 2 && animation_done ) fill(#ffffff, alpha(255));
     else if (disapear == 1) { 
       int map_v = parseInt(map(z, 0, 1500, 255, 0));
       println("z: " + z + " map: " + map_v );
       fill(#ffffff, map_v);
     } else fill(#ffffff);
-    
+
     translate(x, y, z);
     sphereDetail(sphere_detail_nr);
     sphere(radius);
@@ -389,14 +399,14 @@ class Dot {
     this.disapear = 0;
     this.zAppear = new Ani(this, duration, 1, "z", this.target.z, Ani.ELASTIC_IN);
   }
-  
+
   void finish_anim(Ani anim) {
     this.pos = this.target;
     this.x = parseInt(this.target.x);
     this.y = parseInt(this.target.y);
     this.z = parseInt(this.target.z);
     this.animation_done = true;
-    
+
     if(disapear == 1) this.disapear = 2;
     else if(reapear == 1) this.reapear = 2;
   }
