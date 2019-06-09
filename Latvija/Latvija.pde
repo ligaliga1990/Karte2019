@@ -201,15 +201,15 @@ void process_active_scene_data() {
     int dot_index = parseInt(random(0, dots.size()));
     boolean decrease = false;
     if(remove) {
-      if (!dots.get(dot_index).disapear) {
-        dots.get(dot_index).disapear = true;
+      if (dots.get(dot_index).disapear == 0) {
+        dots.get(dot_index).disapear = 1;
         decrease = true;
         //println("disapear "+ dots.get(dot_index).disapear);
       }
     } else {
-      if( dots.get(dot_index).reapear ) {
+      if( dots.get(dot_index).reapear  == 0) {
         // TODO: get disapear list
-        dots.get(dot_index).reapear = true;
+        dots.get(dot_index).reapear = 1;
         decrease = true;
       }
     }
@@ -238,6 +238,7 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 
 void draw_dots() {
   // The second is using an enhanced loop:
+  ambientLight(255, 255, 255);
   for (Dot dot : dots) {
     dot.draw();
   }
@@ -318,8 +319,8 @@ class Dot {
   public PVector target;
 
   public int radius;
-  public boolean disapear = false;
-  public boolean reapear = false;
+  public int disapear = 0;
+  public int reapear = 0;
   public boolean animation_done = true;
   Ani zDisapear;
   Ani zAppear;
@@ -349,15 +350,15 @@ class Dot {
   }
 
   public void draw() {
-    if (!this.disapear && !this.reapear) z_startup_position();
-    if(this.disapear && animation_done) this.disapear();
-    else if(this.reapear) this.reapear();
+    if (this.disapear == 0 && this.reapear == 0) z_startup_position();
+    if(this.disapear == 1 && animation_done) this.disapear();
+    else if(this.reapear == 1 && animation_done) this.reapear();
     
     // draws a sphere at x,y,z with size sizeSphere
     pushMatrix();
     noStroke();
     
-    if (disapear && animation_done ) fill(#000000);
+    if (disapear == 2 && animation_done ) fill(alpha(255));
     else fill(#ffffff);
     
     translate(x, y, z);
@@ -367,15 +368,16 @@ class Dot {
   }
 
   public void disapear() {
-    this.disapear = true;
+    this.reapear = 0;
+    this.disapear = 1;
     this.animation_done = false;
-    this.target = new PVector(this.pos.x, this.pos.y, 3000);
-    zDisapear = new Ani(this, duration, the_delay, "z", target.z, Ani.EXPO_IN_OUT, "onEnd:finish_anim");
+    this.target = new PVector(this.pos.x, this.pos.y, 1500);
+    zDisapear = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
   public void reapear() {
-    this.reapear = true;
-    this.disapear = false;
+    this.reapear = 1;
+    this.disapear = 0;
     this.zAppear = new Ani(this, duration, 1, "z", this.target.z, Ani.ELASTIC_IN);
   }
   
@@ -385,5 +387,8 @@ class Dot {
     this.y = parseInt(this.target.y);
     this.z = parseInt(this.target.z);
     this.animation_done = true;
+    
+    if(disapear == 1) this.disapear = 2;
+    else if(reapear == 1) this.reapear = 2;
   }
 }
