@@ -40,7 +40,7 @@ int max_total_people;
 int people_per_dot;
 
 
-// ArrayList<Region> regions = new ArrayList<Region>();
+ArrayList<Region> regions = new ArrayList<Region>();
 ArrayList<Dot> dots = new ArrayList<Dot>();
 ArrayList<Scene> scenes = new ArrayList<Scene>();
 
@@ -58,14 +58,6 @@ void setup() {
   println("Screen Size width: " + app_width);
   println("Screen Size height: " + app_height);
 
-  latvia_map_img = loadImage(Latvia_img);
-  latvia_map_img.resize(displayWidth, displayHeight);
-
-
-
-  println("Image width: " + latvia_map_img.width);
-  println("Image height: " + latvia_map_img.height);
-
   // Add 3D world camera
   camera = new PeasyCam(this, displayWidth / 2, displayHeight / 2, 0, 1000);
   camera.setMinimumDistance(400);
@@ -74,17 +66,17 @@ void setup() {
   calculate_rows();
   calculate_columns();
 
-  load_data();
+  load_regions_data();
   get_dots();
+  load_scene_data();
 
   if (dots.size() > 0) people_per_dot = max_total_people / dots.size();
+  int divider = 2;
+  people_per_dot = people_per_dot / divider;
 
   println("dots: " + dots.size());
   println("max total people: " + max_total_people);
   println("peopel per dot: " + people_per_dot);
-
-  int divider = 2;
-  people_per_dot = people_per_dot / divider;
 
   println("peopel per dot diveded by " + divider + ": " + people_per_dot);
   set_active_scene(0);
@@ -96,19 +88,32 @@ void load_regions_data() {
   int columns = table.getColumnCount();
   int rows = table.getRowCount();
 
-  println(rows + " total rows in table");
-  println(columns + " total rows in table");
+  println(rows + " total rows in regions table");
+  println(columns + " total columns in regions table");
 
   for (TableRow row : table.rows()) {
-    String name = row.getString("NAME");
-    String parent = row.getString("PARENT");
+    String name = trim(row.getString("NAME"));
+    String parent = new String(trim(row.getString("PARENT")));
     String label = row.getString("LABEL");
     String color_hex = row.getString("COLOR");
-    String image = row.getString("IMAGE");
+    String image = trim(row.getString("IMAGE"));
+
+    if (parent.length() == 0) {
+      Region new_region = create_region(row);
+      regions.add(new_region);
+    } else {
+      for (Region region: regions) {
+        //println("Parent -> region.name: " + region.name + " parent: " + parent + "  ");
+        if(region.name.equals(parent)) {
+          Region new_child_region = create_region(row);
+          region.add_child_scene(new_child_region);
+        }
+      }
+    }
   }
 }
 
-void load_data() {
+void load_scene_data() {
   println("==> Load population data:");
   table = loadTable(data_population,"header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
 
@@ -131,7 +136,7 @@ void load_data() {
       }
     } else {
       for (Scene scene: scenes) {
-        if(scene.name == parent && scene.year == year) {
+        if(scene.name.equals(parent) && scene.year == year) {
           Scene new_child_scene = create_scene(row);
           scene.add_child_scene(new_child_scene);
         }
@@ -144,8 +149,8 @@ void load_data() {
 
 Scene create_scene(TableRow row) {
   Scene scene = new Scene(row.getInt("ID"));
-  scene.set_name(row.getString("NAME"));
-  scene.set_parent(row.getString("PARENT"));
+  scene.set_name(new String(trim(row.getString("NAME"))));
+  scene.set_parent(new String(trim(row.getString("PARENT"))));
   scene.set_year(row.getInt("YEAR"));
   scene.set_total(row.getInt("TOTAL"));
   scene.set_increase(row.getInt("INCREASE"));
@@ -153,6 +158,17 @@ Scene create_scene(TableRow row) {
   scene.set_change(row.getInt("CHANGE"));
 
   return scene;
+}
+
+Region create_region(TableRow row) {
+  Region region = new Region(row.getInt("ID"));
+  region.set_name(new String(trim(row.getString("NAME"))));
+  region.set_parent(new String(trim(row.getString("PARENT"))));
+  region.set_label(new String(trim(row.getString("LABEL"))));
+  region.set_color(new String(trim(row.getString("COLOR"))));
+  region.set_image(new String(trim(row.getString("IMAGE"))));
+
+  return region;
 }
 
 void set_active_scene(int index) {
@@ -170,12 +186,28 @@ void get_dots() {
 
       PVector pos = new PVector(x , y, z);
 
-      if(latvia_map_img.width < pos.x || latvia_map_img.height - 30 < pos.y) continue;
+      boolean skip = false;
 
-      int alpha = get_coord_alpha_value(latvia_map_img, x, y);
-      if (alpha < 100) {
-        dots.add(new Dot(alpha, pos, default_radius));
+      for (Region region: regions) {
+        for (Region child_region: region.child_regions) {
+
+          if(region.image.width < pos.x || region.image.height - 30 < pos.y) {
+            skip = true;
+            break;
+          }
+
+          int alpha = get_coord_alpha_value(child_region.image, x, y);
+
+          if (alpha < 100) {
+            dots.add(new Dot(alpha, pos, default_radius, child_region.name));
+            break;
+          }
+        }
+
+        if (skip) break;
       }
+
+      if (skip) continue;
     }
   }
 }
@@ -200,7 +232,49 @@ void draw_labels() {
 void process_active_scene_data() {
   boolean remove = (active_scene.change < 0);
   int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
-  println("changable_dots "+ changable_dots);
+
+  println("total changable dots: " + changable_dots);
+
+  for( Scene child_scene: active_scene.child_scenes) {
+    boolean child_remove = (child_scene.change < 0);
+    int child_changable_dots = abs(parseInt(child_scene.change) / parseInt(people_per_dot));
+    int remove_from_global_dots = child_changable_dots;
+
+    String child_region_name = child_scene.name;
+
+    ArrayList<Dot> child_dots = new ArrayList<Dot>();
+    int child_total_dots = 0;
+
+    for (Dot dot: dots) {
+      if (dot.region_name.equals(child_region_name)) {
+        child_total_dots ++;
+        child_dots.add(dot);
+      }
+    }
+
+    while (child_changable_dots > 0) {
+      int dot_index = parseInt(random(0, child_dots.size()));
+      boolean decrease = false;
+
+      if(child_remove) {
+        if (child_dots.get(dot_index).disapear == 0) {
+          child_dots.get(dot_index).disapear = 1;
+          //println("disapear "+ dots.get(dot_index).disapear);
+        }
+        decrease = true;
+      } else {
+        if( child_dots.get(dot_index).reapear  == 0) {
+          // TODO: get disapear list
+          child_dots.get(dot_index).reapear = 1;
+        }
+        decrease = true;
+      }
+
+      if (decrease) child_changable_dots --;
+    }
+
+    changable_dots = changable_dots - remove_from_global_dots;
+  }
 
   while (changable_dots > 0) {
     int dot_index = parseInt(random(0, dots.size()));
@@ -275,6 +349,56 @@ void drawSphere(PVector pos, int radius) {
   popMatrix();
 }
 
+class Region {
+  int id;
+  String name;
+  String label;
+  String parent;
+  String color_hex;
+
+  String image_path;
+  PImage image;
+
+
+
+  ArrayList<Region> child_regions = new ArrayList<Region>();
+
+  Region(int id) {
+    this.id = id;
+  }
+
+  void set_name(String name) {
+    this.name = name;
+  }
+
+  void set_parent(String parent) {
+    this.parent = parent;
+  }
+
+  void set_label(String label) {
+    this.label = label;
+  }
+
+  void set_color(String color_hex) {
+    this.color_hex = color_hex;
+  }
+
+  void set_image(String image_path) {
+    this.image_path = image_path;
+
+
+    this.image = loadImage(image_path);
+    this.image.resize(displayWidth, displayHeight);
+
+    println("Image " + this.image_path + " width: " + this.image.width);
+    println("Image " + this.image_path + "  height: " + this.image.height);
+  }
+
+  void add_child_scene(Region child_region) {
+    child_regions.add(child_region);
+  }
+}
+
 
 class Scene {
   public int id;
@@ -333,6 +457,8 @@ class Dot {
   public int y;
   public int z;
 
+  public String region_name;
+
   public PVector orignal;
   public PVector pos;
   public PVector target;
@@ -348,7 +474,7 @@ class Dot {
   float the_delay = random(0, 10);
 
 
-  Dot(int a, PVector pos, int r) {
+  Dot(int a, PVector pos, int r, String region_name) {
     this.alpha = a;
     this.orignal = pos;
     this.pos = pos;
@@ -356,6 +482,8 @@ class Dot {
     this.x = parseInt(pos.x);
     this.y = parseInt(pos.y);
     this.z = parseInt(pos.z);
+
+    this.region_name = region_name;
   }
 
   public void z_startup_position() {
