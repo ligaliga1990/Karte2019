@@ -40,6 +40,7 @@ int people_per_dot;
 ArrayList<Region> regions = new ArrayList<Region>();
 ArrayList<Dot> dots = new ArrayList<Dot>();
 ArrayList<Scene> scenes = new ArrayList<Scene>();
+ArrayList<Label> labels = new ArrayList<Label>();
 
 
 void setup() {
@@ -77,7 +78,28 @@ void setup() {
 
   println("peopel per dot diveded by " + divider + ": " + people_per_dot);
   set_active_scene(0);
+  load_labels();
 }
+
+void load_labels() {
+  labels.add(new Label("", LABEl_TYPE.YEAR));
+  create_regions_labels(regions);
+  for(int index = 0; index < labels.size(); index++) {
+    labels.get(index).set_pos(new PVector(width / labels.size() * index + 10, height - 50));
+  }
+  println("labels count: " + labels.size());
+}
+
+void create_regions_labels(ArrayList<Region> p_regions) {
+  for(Region region: p_regions) {
+    labels.add(new Label(region.label, LABEl_TYPE.REGION, region));
+    if (region.child_regions.size() > 0) {
+      create_regions_labels(region.child_regions);
+    }
+  }
+}
+
+
 
 void load_regions_data() {
   println("==> Load regions data:");
@@ -92,7 +114,7 @@ void load_regions_data() {
     String name = trim(row.getString("NAME"));
     String parent = new String(trim(row.getString("PARENT")));
     String label = row.getString("LABEL");
-    String color_hex = row.getString("COLOR");
+    String color_code = row.getString("COLOR");
     String image = trim(row.getString("IMAGE"));
 
     Region new_region = create_region(row);
@@ -207,42 +229,20 @@ void get_dots() {
       int should_be_added = 1;
 
       for (Region region: regions) {
-        int return_code = process_region_dots(region, pos);
-        // for (Region child_region: region.child_regions) {
+        if(region.image.width < pos.x || region.image.height - 30 < pos.y) {
+          break;
+        }
+        int g_alpha = get_coord_alpha_value(region.image, parseInt(pos.x), parseInt(pos.y));
+        if (g_alpha < 100) {
+          int return_code = process_region_dots(region, pos);
 
-        //   if(region.image.width < pos.x || region.image.height - 30 < pos.y) {
-        //     skip = true;
-        //     should_be_added = 0;
-        //     break;
-        //   }
-
-        //   int alpha = get_coord_alpha_value(child_region.image, x, y);
-        //   int g_alpha = get_coord_alpha_value(region.image, x, y);
-
-        //   if (g_alpha > 100) {
-        //     should_be_added = 0;
-        //   }
-
-        //   if (alpha < 100) {
-        //     Dot dot = new Dot(alpha, pos, default_radius, child_region.name);
-        //     dot.set_color(child_region.color_hex);
-        //     dots.add(dot);
-        //     should_be_added = 2;
-        //     break;
-        //   }
-        // }
-
-        // if (skip) break;
+          if (return_code != 0) {
+            Dot dot = new Dot(g_alpha, pos, default_radius, region.name);
+            dot.set_color(region.color_code);
+            dots.add(dot);
+          }
+        }
       }
-
-      // if (should_be_added == 1) {
-      //   Region region = regions.get(0);
-      //   int g_alpha = get_coord_alpha_value(region.image, x, y);
-
-      //   Dot dot = new Dot(g_alpha, pos, default_radius, region.name);
-      //   dot.set_color(region.color_hex);
-      //   dots.add(dot);
-      // }
 
       if (skip) continue;
     }
@@ -251,8 +251,11 @@ void get_dots() {
 
 int process_region_dots(Region region, PVector pos) {
   if (region.child_regions.size() > 0) {
+    int return_code = 0;
     for (Region child_region: region.child_regions) {
-      int return_code = process_region_dots(child_region, pos);
+      return_code = process_region_dots(child_region, pos);
+
+      if (return_code == 0) return return_code;
     }
   } else {
     if(region.image.width < pos.x || region.image.height - 30 < pos.y) {
@@ -263,12 +266,12 @@ int process_region_dots(Region region, PVector pos) {
 
     if (alpha < 100) {
       Dot dot = new Dot(alpha, pos, default_radius, region.name);
-      dot.set_color(region.color_hex);
+      dot.set_color(region.color_code);
       dots.add(dot);
       return 0;
     }
   }
-  return 2;
+  return 3;
 }
 
 
@@ -280,10 +283,14 @@ void draw() {
 
 void draw_labels() {
   camera.beginHUD(); // start drawing relative to the camera view
+  // fill(0);
+  // rect(0, height - 100, width, 100);
   fill(255);
-  rect(20, 10, 120, 30);
-  fill(0);
-  text(str(frameRate), 30, 30);
+
+  for (Label label : labels) {
+    label.draw();
+  }
+
   camera.endHUD();  // and don't forget to stop/close with this!
 }
 
@@ -425,16 +432,87 @@ void drawSphere(PVector pos, int radius) {
   popMatrix();
 }
 
+
+interface LABEl_TYPE {
+  int
+  YEAR         = 0,
+  REGION       = 1;
+}
+
+
+class Label {
+  String label;
+  Region region;
+  String previous_text;
+  String text;
+  int type;
+  boolean pos_set = false;
+  PVector pos;
+  color color_code;
+
+  Label(String label, int type, Region region) {
+    this.label = label;
+    this.type = type;
+    this.region = region;
+    this.color_code = region.color_code;
+  }
+
+  Label(String label, int type) {
+    this.label = label;
+    this.type = type;
+    this.color_code = #ffffff;
+  }
+
+  void set_pos(PVector pos) {
+    this.pos = pos;
+    this.pos_set = true;
+  }
+
+  String get_text() {
+    switch(type) {
+      case LABEl_TYPE.YEAR:
+        return str(active_scene.year);
+      case LABEl_TYPE.REGION:
+        if (active_scene.name.equals(this.region.name)) {
+          return str(active_scene.total);
+        } else {
+          for (Scene scene: active_scene.child_scenes) {
+            if (scene.name.equals(this.region.name)) {
+              return str(scene.total);
+            }
+          }
+        }
+    }
+
+    if (type == LABEl_TYPE.YEAR) {
+      return str(active_scene.year);
+    } else
+    return "";
+  }
+
+  void draw() {
+    this.previous_text = this.text;
+    this.text = get_text();
+
+    if (this.pos_set) {
+      textSize(18);
+      fill(this.color_code);
+      text(this.label + " " + this.text, this.pos.x, this.pos.y);
+    }
+  }
+}
+
 class Region {
   int id;
   String name;
   String label;
   String parent;
-  color color_hex;
+  color color_code;
 
   String image_path;
   PImage image;
 
+  Label label_object;
 
 
   ArrayList<Region> child_regions = new ArrayList<Region>();
@@ -442,6 +520,10 @@ class Region {
   Region(int id) {
     this.id = id;
   }
+
+  // void create_label(int number) {
+  //   Label label_object.update(this.label + " " + new String(number));
+  // }
 
   void set_name(String name) {
     this.name = name;
@@ -455,8 +537,8 @@ class Region {
     this.label = label;
   }
 
-  void set_color(color color_hex) {
-    this.color_hex = color_hex;
+  void set_color(color color_code) {
+    this.color_code = color_code;
   }
 
   void set_image(String image_path) {
@@ -544,7 +626,7 @@ class Dot {
   public int reapear = 0;
   public boolean animation_done = true;
 
-  public color color_hex;
+  public color color_code;
 
   Ani zAnim;
 
@@ -560,13 +642,13 @@ class Dot {
     this.x = parseInt(pos.x);
     this.y = parseInt(pos.y);
     this.z = parseInt(pos.z);
-    this.color_hex = #FFFFFF;
+    this.color_code = #FFFFFF;
 
     this.region_name = region_name;
   }
 
-  public void set_color(color color_hex) {
-    this.color_hex = color_hex;
+  public void set_color(color color_code) {
+    this.color_code = color_code;
   }
 
   public void z_startup_position() {
@@ -589,17 +671,17 @@ class Dot {
     noStroke();
 
     if (this.disapear == 2 && this.animation_done )
-      fill(this.color_hex, alpha(255));
+      fill(this.color_code, alpha(255));
     else if (this.disapear == 1) {
       int map_v = parseInt(map(z, 0, 1500, 255, 0));
       //println("z: " + z + " map: " + map_v );
-      fill(this.color_hex, map_v);
+      fill(this.color_code, map_v);
     } else if (this.reapear == 1) {
       int map_v = parseInt(map(z, 1500, 0, 0, 255));
       //println("z: " + z + " map: " + map_v );
-      fill(this.color_hex, map_v);
+      fill(this.color_code, map_v);
     } else
-      fill(this.color_hex);
+      fill(this.color_code);
 
     translate(this.x, this.y, this.z);
     sphereDetail(sphere_detail_nr);
