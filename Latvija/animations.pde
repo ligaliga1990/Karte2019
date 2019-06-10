@@ -13,4 +13,4 @@ int anim_index = 26;
 Easing currentEasing = easings[anim_index];
 
 int z_animation = Z_ANIMS.JUMP;
-int z_random_distance = 10;
+int z_random_distance = 15;

@@ -654,7 +654,7 @@ class Dot {
   public void z_startup_position() {
     switch (z_animation) {
       case 1:
-        this.z = parseInt(random(1, z_random_distance));
+        this.z = parseInt(random(-z_random_distance, z_random_distance));
         this.pos.z = this.z;
       break;
       default:
