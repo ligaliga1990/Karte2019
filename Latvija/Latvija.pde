@@ -653,10 +653,11 @@ class Dot {
 
   public void z_startup_position() {
     switch (z_animation) {
-     case 1:
-       this.pos.z = random(1, z_random_distance);
-     break;
-     default:
+      case 1:
+        this.z = parseInt(random(1, z_random_distance));
+        this.pos.z = this.z;
+      break;
+      default:
        //do nothing
     }
   }

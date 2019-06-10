@@ -2,8 +2,7 @@
 interface Z_ANIMS {
   int
   NONE         = 0,
-  JUMP         = 1,
-  SPHERE_IT    = 2;
+  JUMP         = 1;
 }
 
 Easing[] easings = { 
@@ -13,5 +12,5 @@ Easing[] easings = {
 int anim_index = 26;
 Easing currentEasing = easings[anim_index];
 
-int z_animation = Z_ANIMS.NONE;
+int z_animation = Z_ANIMS.JUMP;
 int z_random_distance = 10;
