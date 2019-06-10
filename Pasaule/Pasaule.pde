@@ -632,6 +632,8 @@ class Dot {
 
   public color color_code;
 
+  public ArrayList<Dot> inner_dots = new ArrayList<Dot>();
+
   Ani zAnim;
 
   float duration = random(5, 20);
@@ -642,6 +644,7 @@ class Dot {
     this.alpha = a;
     this.orignal = pos;
     this.pos = pos;
+    this.target = this.pos;
     this.radius = r;
     this.x = parseInt(pos.x);
     this.y = parseInt(pos.y);
@@ -649,6 +652,20 @@ class Dot {
     this.color_code = #FFFFFF;
 
     this.region_name = region_name;
+  }
+
+  Dot(Dot object) {
+    this.alpha = object.alpha;
+    this.orignal = object.orignal;
+    this.pos = object.pos;
+    this.target = object.target;
+    this.radius = object.radius;
+    this.x = object.x;
+    this.y = object.y;
+    this.z = object.z;
+    this.color_code = object.color_code;
+
+    this.region_name = object.region_name;
   }
 
   public void set_color(color color_code) {
@@ -667,6 +684,7 @@ class Dot {
   }
 
   public void draw() {
+
     if (this.disapear == 0 && this.reapear == 0) z_startup_position();
     if(this.disapear == 1 && animation_done) this.increase();
     else if(this.reapear == 1 && animation_done) this.decrease();
@@ -692,6 +710,10 @@ class Dot {
       fill(this.color_code);
     }
 
+    for (int new_z = parseInt(this.orignal.z); new_z != this.target.z; new_z -= 1) {
+      point(this.x, this.y, new_z);
+    }
+
     point(this.x, this.y, this.z);
   }
 
@@ -699,14 +721,14 @@ class Dot {
     this.reapear = 0;
     this.disapear = 1;
     this.animation_done = false;
-    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 10);
+    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z + 40);
     zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
   public void decrease() {
     this.reapear = 1;
     this.disapear = 0;
-    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 10);
+    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 40);
     zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 

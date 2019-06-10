@@ -15,4 +15,4 @@ Easing currentEasing = easings[anim_index];
 int z_animation = Z_ANIMS.NONE;
 int z_random_distance = 7;
 
-int scene_interval = 20 * 1000;
+int scene_interval = 2 * 1000;
