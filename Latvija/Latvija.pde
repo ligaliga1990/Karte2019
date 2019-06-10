@@ -10,6 +10,8 @@ PeasyCam camera;
 Table table;
 PImage latvia_map_img;
 
+int DISPLAY_NR = 1;
+
 // define images
 String Latvia_img = "images/latvia_map.png";
 
@@ -47,6 +49,7 @@ int max_total_people;
 int people_per_dot;
 
 
+// ArrayList<Region> regions = new ArrayList<Region>();
 ArrayList<Dot> dots = new ArrayList<Dot>();
 ArrayList<Scene> scenes = new ArrayList<Scene>();
 
@@ -60,7 +63,7 @@ Easing currentEasing = easings[anim_index];
 
 
 void setup() {
-  fullScreen(P3D);
+  fullScreen(P3D, DISPLAY_NR);
 
   // Ani.init() must be called always first!
   Ani.init(this);
