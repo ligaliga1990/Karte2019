@@ -1,0 +1,8 @@
+ID,NAME,PARENT,LABEL,COLOR,IMAGE
+1,LATVIJA,,L,#ffffff,images/map_latvia.png
+2,RIGA,LATVIJA,R,#ffffff,images/map_riga.png
+3,PIERIGA,LATVIJA,PR,#ffffff,images/map_pieriga.png
+4,VIDZEME,LATVIJA,V,#ffffff,images/map_vidzeme.png
+5,KURZEME,LATVIJA,K,#ffffff,images/map_kurzeme.png
+6,ZEMGALE,LATVIJA,Z,#ffffff,images/zemgale.png
+7,LATGALE,LATVIJA,L,#ffffff,images/latgale.png
