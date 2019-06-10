@@ -1,4 +1,4 @@
-// define animations
+ //define animations
 interface Z_ANIMS {
   int
   NONE         = 0,
@@ -13,6 +13,6 @@ int anim_index = 26;
 Easing currentEasing = easings[anim_index];
 
 int z_animation = Z_ANIMS.JUMP;
-int z_random_distance = 7;
+int z_random_distance = 0; //maina kartes pametnes leksananas augstumu - flaberigumu
 
 int scene_interval = 7000;
