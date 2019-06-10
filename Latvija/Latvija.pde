@@ -268,6 +268,7 @@ int process_region_dots(Region region, PVector pos) {
       Dot dot = new Dot(alpha, pos, default_radius, region.name);
       dot.set_color(region.color_code);
       dots.add(dot);
+
       return 0;
     }
   }
@@ -378,6 +379,8 @@ void process_active_scene_data() {
 
     if (decrease) changable_dots --;
   }
+
+  active_scene.start();
 }
 
 
@@ -414,6 +417,8 @@ void draw_dots() {
     dot.draw();
     if(!dot.animation_done) go_to_next_scene = false;
   }
+
+  if (millis() > active_scene.end_time) go_to_next_scene = true;
 
   if (go_to_next_scene) {
     load_next_scene();
@@ -568,11 +573,16 @@ class Scene {
   public int increase;
   public int migration;
   public int change;
+  public int end_time;
 
   ArrayList<Scene> child_scenes = new ArrayList<Scene>();
 
   Scene(int id) {
     this.id = id;
+  }
+
+  void start() {
+    this.end_time = millis() + scene_interval;
   }
 
   void set_name(String name) {
@@ -630,8 +640,8 @@ class Dot {
 
   Ani zAnim;
 
-  float duration = random(7, 20);
-  float the_delay = random(0, 10);
+  float duration = random(5, 20);
+  float the_delay = random(0, 5);
 
 
   Dot(int a, PVector pos, int r, String region_name) {
@@ -654,7 +664,7 @@ class Dot {
   public void z_startup_position() {
     switch (z_animation) {
       case 1:
-        this.z = parseInt(random(1, z_random_distance));
+        this.z = parseInt(random(-z_random_distance, z_random_distance));
         this.pos.z = this.z;
       break;
       default:
