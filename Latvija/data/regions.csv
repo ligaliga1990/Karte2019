@@ -2,7 +2,7 @@ ID,NAME,PARENT,LABEL,COLOR,IMAGE
 1,LATVIJA,,L,ffffff,images/map_latvia.png
 2,RIGA,LATVIJA,R,ffffff,images/map_riga.png
 3,PIERIGA,LATVIJA,PR,ffffff,images/map_pieriga.png
-4,VIDZEME,LATVIJA,V,ff0000,images/map_vidzeme.png
-5,KURZEME,LATVIJA,K,ff0000,images/map_kurzeme.png
+4,VIDZEME,LATVIJA,V,9E3039,images/map_vidzeme.png
+5,KURZEME,LATVIJA,K,9E3039,images/map_kurzeme.png
 6,ZEMGALE,LATVIJA,Z,ffffff,images/map_zemgale.png
-7,LATGALE,LATVIJA,L,ff0000,images/map_latgale.png
+7,LATGALE,LATVIJA,L,9E3039,images/map_latgale.png
