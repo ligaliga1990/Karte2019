@@ -12,9 +12,6 @@ PImage latvia_map_img;
 
 int DISPLAY_NR = 1;
 
-// define images
-String Latvia_img = "images/map_latvia.png";
-
 //
 String data_regions = "data/regions.csv";
 String data_population = "data/population.csv";
