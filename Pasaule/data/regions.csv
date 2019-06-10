@@ -1,0 +1,12 @@
+ID,NAME,PARENT,LABEL,COLOR,IMAGE
+1,WORLD,,WORLD,ffffff,images/World_map.png
+2,AFRICA,WORLD,AF,ffffff,images/Africa_map.png
+3,ASIA,WORLD,AS,ffffff,images/Asia_map.png
+4,AUSTRALIA,WORLD,AUS,ffffff,images/Australia_map.png
+5,EUROPE,WORLD,E,ffffff,images/Eiropa_map.png
+6,NA,WORLD,NA,ffffff,images/NA_map.png
+7,SA,WORLD,SA,ffffff,images/SA_map.png
+8,CHINA,ASIA,CHINA,ffffff,images/China_map.png
+9,INDIA,ASIA,INDIA,ffffff,images/India_map.png
+10,USA,NA,USA,ffffff,images/USA_map.png
+13,AFGHANISTAN,ASIA,AFGHANISTAN,ffffff,images/Afghanistan_map.png
