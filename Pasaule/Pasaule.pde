@@ -31,8 +31,8 @@ float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
 
-int max_total_people = 0;
-int people_per_dot = 0;
+long max_total_people = 0;
+long people_per_dot = 0;
 
 
 ArrayList<Region> regions = new ArrayList<Region>();
@@ -159,13 +159,11 @@ void load_scene_data() {
     String name = row.getString("NAME");
     String parent = row.getString("PARENT");
     int year = row.getInt("YEAR");
-    int total = parseInt(row.getInt("TOTAL"));
+    long total = Long.parseLong(row.getString("TOTAL"));
 
 
     if (parent.length() == 0) {
-      println("name " + name + " total " + total);
       Scene new_scene = create_scene(row);
-      println("name " + name + " total " + total);
       scenes.add(new_scene);
       if (max_total_people < total) {
         max_total_people = total;
@@ -185,10 +183,11 @@ void load_scene_data() {
 
 Scene create_scene(TableRow p_row) {
   Scene scene = new Scene(p_row.getInt("ID"));
+
   scene.set_name(new String(trim(p_row.getString("NAME"))));
   scene.set_parent(new String(trim(p_row.getString("PARENT"))));
   scene.set_year(p_row.getInt("YEAR"));
-  scene.set_total(parseInt(p_row.getInt("TOTAL")));
+  scene.set_total(Long.parseLong(p_row.getString("TOTAL")));
 
   return scene;
 }
@@ -210,7 +209,7 @@ Region create_region(TableRow row) {
 }
 
 void set_active_scene(int index) {
-  int previous_total = active_scene.total;
+  long previous_total = active_scene.total;
 
   active_scene_index = index;
   active_scene = scenes.get(index);
@@ -225,7 +224,7 @@ void get_dots() {
       int y = parseInt(offset + (default_radius * 2 + space) * row); // vertikālais` atstatums
       int z = 1;
 
-      PVector pos = new PVector(x , y, z);
+      PVector pos = new PVector(x, y, z);
 
       boolean skip = false;
       int should_be_added = 1;
@@ -287,9 +286,6 @@ void draw() {
 
 void draw_labels() {
   camera.beginHUD(); // start drawing relative to the camera view
-  // fill(0);
-  // rect(0, height - 100, width, 100);
-  fill(255);
 
   for (Label label : labels) {
     label.draw();
@@ -299,16 +295,16 @@ void draw_labels() {
 }
 
 
-void process_active_scene_data(int previous_total) {
-  int change = active_scene.total - previous_total;
-  int changable_dots = abs(parseInt(change) / parseInt(people_per_dot));
+void process_active_scene_data(long previous_total) {
+  long change = active_scene.total - previous_total;
+  long changable_dots = Long.parseLong(str(parseInt(abs(change / people_per_dot))));
   boolean remove = (change < 0);
 
-  println("total changable dots: " + changable_dots);
+  //println("total changable dots: " + changable_dots);
 
   for( Scene child_scene: active_scene.child_scenes) {
     boolean child_remove = (child_scene.change < 0);
-    int child_changable_dots = abs(parseInt(child_scene.change) / parseInt(people_per_dot));
+    long child_changable_dots = Long.parseLong(str(parseInt(abs(child_scene.change / people_per_dot))));
 
     String child_region_name = child_scene.name;
 
@@ -419,26 +415,14 @@ void draw_dots() {
   boolean go_to_next_scene = true;
   for (Dot dot : dots) {
     dot.draw();
-    if(!dot.animation_done) go_to_next_scene = false;
+    //if(!dot.animation_done) go_to_next_scene = false;
   }
 
-  if (millis() > active_scene.end_time) go_to_next_scene = true;
+  if (millis() < active_scene.end_time) go_to_next_scene = false;
 
   if (go_to_next_scene) {
     load_next_scene();
   }
-}
-
-
-void drawSphere(PVector pos, int radius) {
-  // draws a sphere at x,y,z with size sizeSphere
-  pushMatrix();
-  noStroke();
-  fill(#ffffff);
-  translate(pos.x, pos.y, pos.z);
-  sphereDetail(sphere_detail_nr);
-  sphere(radius);
-  popMatrix();
 }
 
 
@@ -579,7 +563,7 @@ class Scene {
   public String name;
   public String parent;
 
-  public int total;
+  public long total;
   public int increase;
   public int migration;
   public int change;
@@ -607,7 +591,7 @@ class Scene {
     this.year = year;
   }
 
-  void set_total(int total) {
+  void set_total(long total) {
     this.total = total;
   }
 
@@ -684,44 +668,46 @@ class Dot {
 
   public void draw() {
     if (this.disapear == 0 && this.reapear == 0) z_startup_position();
-    if(this.disapear == 1 && animation_done) this.disapear();
-    else if(this.reapear == 1 && animation_done) this.reapear();
+    if(this.disapear == 1 && animation_done) this.increase();
+    else if(this.reapear == 1 && animation_done) this.decrease();
 
     // draws a sphere at x,y,z with size sizeSphere
-    pushMatrix();
-    noStroke();
+    strokeWeight(radius * 2);
 
-    if (this.disapear == 2 && this.animation_done )
+    if (this.disapear == 2 && this.animation_done ) {
+      stroke(this.color_code, alpha(255));
       fill(this.color_code, alpha(255));
-    else if (this.disapear == 1) {
+    } else if (this.disapear == 1) {
       int map_v = parseInt(map(z, 0, 1500, 255, 0));
       //println("z: " + z + " map: " + map_v );
+      stroke(this.color_code, map_v);
       fill(this.color_code, map_v);
     } else if (this.reapear == 1) {
       int map_v = parseInt(map(z, 1500, 0, 0, 255));
       //println("z: " + z + " map: " + map_v );
+      stroke(this.color_code, map_v);
       fill(this.color_code, map_v);
-    } else
+    } else {
+      stroke(this.color_code);
       fill(this.color_code);
+    }
 
-    translate(this.x, this.y, this.z);
-    sphereDetail(sphere_detail_nr);
-    sphere(radius);
-    popMatrix();
+    point(this.x, this.y, this.z);
   }
 
-  public void disapear() {
+  public void increase() {
     this.reapear = 0;
     this.disapear = 1;
     this.animation_done = false;
-    this.target = new PVector(this.pos.x, this.pos.y, 1500);
+    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 10);
     zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
-  public void reapear() {
+  public void decrease() {
     this.reapear = 1;
     this.disapear = 0;
-    zAnim = new Ani(this, duration, the_delay, "z", orignal.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 10);
+    zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
   void finish_anim(Ani anim) {
