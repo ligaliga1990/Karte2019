@@ -9,4 +9,13 @@ ID,NAME,PARENT,LABEL,COLOR,IMAGE
 8,CHINA,ASIA,CHINA,ffffff,images/China_map.png
 9,INDIA,ASIA,INDIA,ffffff,images/India_map.png
 10,USA,NA,USA,ffffff,images/USA_map.png
-13,AFGHANISTAN,ASIA,AFGHANISTAN,ffffff,images/Afghanistan_map.png
+11,INDONESIA,ASIA,INDONESIA,ffffff,images/Indonesia_map.png
+12,BRAZIL,SA,BRAZIL,ffffff,images/Brazil_map.png
+13,PAKISTAN,ASIA,PAKISTAN,ffffff,images/Pakistan_map.png
+14,NIGERIA,AFRICA,NIGERIA,ffffff,images/Nigeria_map.png
+15,BANGLADESH,ASIA,BANGLADESH,ffffff,images/Bangladesh_map.png
+16,RUSSIA,EIROPE,RUSSIA,ffffff,images/Russia_map.png
+17,MEXICO,SA,MEXICO,ffffff,images/Mexico_map.png
+18,AFGHANISTAN,ASIA,AFGHANISTAN,ffffff,images/Afghanistan_map.png
+19,SOMALIA,AFRICA,SOMALIA,ffffff,images/Somalia_map.png
+20,RWANDA,AFRICA,RWANDA,ffffff,images/Rwanda_map.png
