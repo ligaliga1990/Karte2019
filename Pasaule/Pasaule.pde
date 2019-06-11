@@ -88,11 +88,14 @@ void load_labels() {
 
   int index = 0;
   for(int i = 1; i <= 2; i++) {
+    int previus_length = 30;
     for(int j = 0; j < labels.size() / 2; j++) {
       Label label = labels.get(index);
+
       label.set_pos(
-        new PVector(j * (label.get_length() + min_width), height - 50 / i)
+        new PVector(previus_length + 30, height - 50 / i)
       );
+      previus_length += label.get_length();
       index++;
     }
   }
@@ -414,7 +417,7 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 
 void load_next_scene() {
   int next_active_scene_index =  active_scene_index + 1;
-  if (next_active_scene_index > scenes.size()) {
+  if (next_active_scene_index > scenes.size() - 1) {
     next_active_scene_index = 0;
   }
   set_active_scene(next_active_scene_index);
@@ -476,14 +479,16 @@ class Label {
   }
 
   int get_length() {
-    String new_text = label + " " + text;
-     switch(type) {
+    String t = this.label;
+
+    switch(type) {
       case LABEl_TYPE.YEAR:
-        return new_text.length();
+        return t.length() + 5 * 10;
       case LABEl_TYPE.REGION:
-        return new_text.length() + 150;
+        return t.length() + 20 * 10;
+
     }
-    return new_text.length();
+    return 0;
   }
 
   String get_text() {
@@ -492,6 +497,7 @@ class Label {
         return str(active_scene.year);
       case LABEl_TYPE.REGION:
         if (active_scene.name.equals(this.region.name)) {
+          println(active_scene.total);
           return str(active_scene.total);
         } else {
           for (Scene scene: active_scene.child_scenes) {

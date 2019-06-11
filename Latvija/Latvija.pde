@@ -403,7 +403,7 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 
 void load_next_scene() {
   int next_active_scene_index =  active_scene_index + 1;
-  if (next_active_scene_index > scenes.size()) {
+  if (next_active_scene_index > scenes.size() - 1) {
     next_active_scene_index = 0;
   }
   set_active_scene(next_active_scene_index);
