@@ -330,30 +330,32 @@ void process_active_scene_data() {
     int changed_dots = 0;
     int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
 
-    while (child_changable_dots > 0) {
-      if (disapearable_child_dots.size() == 0 && reapearable_child_dots.size() == 0 ) break;
-      if (available_changable_dots == changed_dots) break;
+    if (available_changable_dots > 0) {
+      while (child_changable_dots > 0) {
+        if (disapearable_child_dots.size() == 0 && reapearable_child_dots.size() == 0 ) break;
+        if (available_changable_dots == changed_dots) break;
 
-      boolean decrease = false;
+        boolean decrease = false;
 
-      if(child_remove) {
-        int dot_index = parseInt(random(0, disapearable_child_dots.size()));
-        if (disapearable_child_dots.get(dot_index).disapear == 0) {
-          child_dots.get(dot_index).disapear = 1;
-          decrease = true;
+        if(child_remove) {
+          int dot_index = parseInt(random(0, disapearable_child_dots.size()));
+          if (disapearable_child_dots.get(dot_index).disapear == 0) {
+            child_dots.get(dot_index).disapear = 1;
+            decrease = true;
+          }
+        } else {
+          int dot_index = parseInt(random(0, reapearable_child_dots.size()));
+          if( child_dots.get(dot_index).reapear == 0) {
+            // TODO: get disapear list
+            child_dots.get(dot_index).reapear = 1;
+            decrease = true;
+          }
         }
-      } else {
-        int dot_index = parseInt(random(0, reapearable_child_dots.size()));
-        if( child_dots.get(dot_index).reapear == 0) {
-          // TODO: get disapear list
-          child_dots.get(dot_index).reapear = 1;
-          decrease = true;
-        }
-      }
 
-      if (decrease) {
-        child_changable_dots --;
-        changed_dots ++;
+        if (decrease) {
+          child_changable_dots --;
+          changed_dots ++;
+        }
       }
     }
 
@@ -405,7 +407,12 @@ void load_next_scene() {
   int next_active_scene_index =  active_scene_index + 1;
   if (next_active_scene_index > scenes.size() - 1) {
     next_active_scene_index = 0;
+    Ani.killAll();
+    for (Dot dot : dots) {
+      dot.reset();
+    }
   }
+
   set_active_scene(next_active_scene_index);
 }
 
@@ -670,6 +677,17 @@ class Dot {
       default:
        //do nothing
     }
+  }
+
+  public void reset () {
+    this.target = this.orignal;
+    this.pos = this.orignal;
+    this.x = parseInt(this.orignal.x);
+    this.y = parseInt(this.orignal.y);
+    this.z = parseInt(this.orignal.z);
+    this.disapear = 0;
+    this.reapear = 0;
+    this.animation_done = true;
   }
 
   public void draw() {

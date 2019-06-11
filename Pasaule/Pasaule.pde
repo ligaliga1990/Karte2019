@@ -437,7 +437,7 @@ void load_next_scene() {
   boolean reset = false;
   if (next_active_scene_index >= scenes.size()) {
     next_active_scene_index = 0;
-
+    Ani.killAll();
     for (Dot dot : dots) {
       dot.reset();
       dot.draw();
