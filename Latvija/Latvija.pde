@@ -59,7 +59,7 @@ void setup() {
   // Add 3D world camera
   camera = new PeasyCam(this, displayWidth / 2, displayHeight / 2, 0, 1000);
   camera.setMinimumDistance(400);
-  camera.setMaximumDistance(displayWidth * 3);
+  camera.setMaximumDistance(displayHeight * 2);
 
   calculate_rows();
   calculate_columns();
@@ -722,14 +722,32 @@ class Dot {
     this.reapear = 0;
     this.disapear = 1;
     this.animation_done = false;
-    this.target = new PVector(this.pos.x, this.pos.y, 1500);
-    zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    try {
+      this.target = new PVector(this.pos.x, this.pos.y, 1500);
+      zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    } catch (Exception error) {
+      println("disapear error:");
+      println(error);
+      println("target coord: " + this.target );
+      this.disapear = 0;
+      this.animation_done = true;
+    }
   }
 
   public void reapear() {
     this.reapear = 1;
     this.disapear = 0;
-    zAnim = new Ani(this, duration, the_delay, "z", orignal.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    
+    try {
+      this.target = this.orignal;
+      zAnim = new Ani(this, duration, the_delay, "z", orignal.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    } catch (Exception error) {
+      println("reaper error:");
+      println(error);
+      println("target coord: " + this.target );
+      this.disapear = 0;
+      this.animation_done = true;
+    }
   }
 
   void finish_anim(Ani anim) {
