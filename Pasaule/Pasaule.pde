@@ -10,7 +10,7 @@ PeasyCam camera;
 Table table;
 PImage latvia_map_img;
 
-int DISPLAY_NR = 1;
+int DISPLAY_NR = 0;
 
 //
 String data_regions = "data/regions.csv";
@@ -20,8 +20,10 @@ String data_population = "data/population.csv";
 // app settings
 float app_width;
 float app_height;
+
 int rows;
 int columns;
+
 int active_scene_index = 0;
 Scene active_scene;
 
@@ -33,6 +35,11 @@ int sphere_detail_nr = 20;
 
 long max_total_people = 0;
 long people_per_dot = 0;
+
+Ani global;
+
+
+boolean reset = false;
 
 
 ArrayList<Region> regions = new ArrayList<Region>();
@@ -75,9 +82,10 @@ void setup() {
   println("peopel per dot: " + people_per_dot);
 
   println("peopel per dot diveded by " + divider + ": " + people_per_dot);
-  set_active_scene(0);
+  set_active_scene(0, false);
   load_labels();
 }
+
 
 void load_labels() {
   labels.add(new Label("", LABEl_TYPE.YEAR));
@@ -201,7 +209,7 @@ Scene create_scene(TableRow p_row) {
   scene.set_name(new String(trim(p_row.getString("NAME"))));
   scene.set_parent(new String(trim(p_row.getString("PARENT"))));
   scene.set_year(p_row.getInt("YEAR"));
-  scene.set_total(Long.parseLong(p_row.getString("TOTAL")));
+  scene.set_total(p_row.getString("TOTAL"));
 
   return scene;
 }
@@ -222,13 +230,18 @@ Region create_region(TableRow row) {
   return region;
 }
 
-void set_active_scene(int index) {
-  long previous_total = active_scene.total;
+void set_active_scene(int index, boolean reset) {
+  long previous_total = 0;
+  if (reset)
+    previous_total = scenes.get(index).total;
+  else
+    previous_total = active_scene.total;
 
   active_scene_index = index;
+  println("scene " + scenes.get(index));
   active_scene = scenes.get(index);
 
-  process_active_scene_data(previous_total);
+  process_active_scene_data(previous_total, reset);
 }
 
 void get_dots() {
@@ -309,94 +322,98 @@ void draw_labels() {
 }
 
 
-void process_active_scene_data(long previous_total) {
+void process_active_scene_data(long previous_total, boolean reset) {
+  println("process_active_scene_data");
   long change = active_scene.total - previous_total;
   long changable_dots = Long.parseLong(str(parseInt(abs(change / people_per_dot))));
   boolean remove = (change < 0);
 
   //println("total changable dots: " + changable_dots);
 
-  for( Scene child_scene: active_scene.child_scenes) {
-    boolean child_remove = (child_scene.change < 0);
-    long child_changable_dots = Long.parseLong(str(parseInt(abs(child_scene.change / people_per_dot))));
+  if (! reset) {
+    for( Scene child_scene: active_scene.child_scenes) {
+      boolean child_remove = (child_scene.change < 0);
+      long child_changable_dots = Long.parseLong(str(parseInt(abs(child_scene.change / people_per_dot))));
 
-    String child_region_name = child_scene.name;
+      String child_region_name = child_scene.name;
 
-    ArrayList<Dot> child_dots = new ArrayList<Dot>();
-    ArrayList<Dot> disapearable_child_dots = new ArrayList<Dot>();
-    ArrayList<Dot> reapearable_child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> disapearable_child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> reapearable_child_dots = new ArrayList<Dot>();
 
 
-    for (Dot dot: dots) {
-      if (dot.region_name.equals(child_region_name)) {
-        child_dots.add(dot);
+      for (Dot dot: dots) {
+        if (dot.region_name.equals(child_region_name)) {
+          child_dots.add(dot);
 
-        if (dot.disapear == 0 ) {
-          disapearable_child_dots.add(dot);
-        }
+          if (dot.disapear == 0 ) {
+            disapearable_child_dots.add(dot);
+          }
 
-        if (dot.disapear != 0 && dot.reapear == 0) {
-          reapearable_child_dots.add(dot);
+          if (dot.disapear != 0 && dot.reapear == 0) {
+            reapearable_child_dots.add(dot);
+          }
         }
       }
+
+      int changed_dots = 0;
+      int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
+
+      int timeout = millis() + 5000;
+      while (child_changable_dots > 0 && timeout > millis()) {
+        if (disapearable_child_dots.size() == 0 && reapearable_child_dots.size() == 0 ) break;
+        if (available_changable_dots == changed_dots) break;
+
+        boolean decrease = false;
+
+        if(child_remove) {
+          int dot_index = parseInt(random(0, disapearable_child_dots.size()));
+          if (disapearable_child_dots.get(dot_index).disapear == 0) {
+            child_dots.get(dot_index).disapear = 1;
+            decrease = true;
+          }
+        } else {
+          int dot_index = parseInt(random(0, reapearable_child_dots.size()));
+          if( child_dots.get(dot_index).reapear == 0) {
+            // TODO: get disapear list
+            child_dots.get(dot_index).reapear = 1;
+            decrease = true;
+          }
+        }
+
+        if (decrease) {
+          child_changable_dots --;
+          changed_dots ++;
+        }
+      }
+
+      changable_dots = changable_dots - changed_dots;
     }
 
-    int changed_dots = 0;
-    int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
-
-    while (child_changable_dots > 0) {
-      if (disapearable_child_dots.size() == 0 && reapearable_child_dots.size() == 0 ) break;
-      if (available_changable_dots == changed_dots) break;
-
+    int timeout = millis() + 5000;
+    while (changable_dots > 0 && timeout > millis()) {
+      int dot_index = parseInt(random(0, dots.size()));
       boolean decrease = false;
-
-      if(child_remove) {
-        int dot_index = parseInt(random(0, disapearable_child_dots.size()));
-        if (disapearable_child_dots.get(dot_index).disapear == 0) {
-          child_dots.get(dot_index).disapear = 1;
+      if(remove) {
+        if (dots.get(dot_index).disapear == 0) {
+          dots.get(dot_index).disapear = 1;
           decrease = true;
+          //println("disapear "+ dots.get(dot_index).disapear);
         }
       } else {
-        int dot_index = parseInt(random(0, reapearable_child_dots.size()));
-        if( child_dots.get(dot_index).reapear == 0) {
+        if( dots.get(dot_index).reapear  == 0) {
           // TODO: get disapear list
-          child_dots.get(dot_index).reapear = 1;
+          dots.get(dot_index).reapear = 1;
           decrease = true;
         }
       }
 
-      if (decrease) {
-        child_changable_dots --;
-        changed_dots ++;
-      }
+      if (decrease) changable_dots --;
     }
-
-    changable_dots = changable_dots - changed_dots;
   }
-
-  while (changable_dots > 0) {
-    int dot_index = parseInt(random(0, dots.size()));
-    boolean decrease = false;
-    if(remove) {
-      if (dots.get(dot_index).disapear == 0) {
-        dots.get(dot_index).disapear = 1;
-        decrease = true;
-        //println("disapear "+ dots.get(dot_index).disapear);
-      }
-    } else {
-      if( dots.get(dot_index).reapear  == 0) {
-        // TODO: get disapear list
-        dots.get(dot_index).reapear = 1;
-        decrease = true;
-      }
-    }
-
-    if (decrease) changable_dots --;
-  }
-
+  println("active scene start");
   active_scene.start();
 }
-
 
 int calculate_rows() {
   rows =  parseInt((app_height) / (default_radius * 2 + space));
@@ -417,10 +434,19 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 
 void load_next_scene() {
   int next_active_scene_index =  active_scene_index + 1;
-  if (next_active_scene_index > scenes.size() - 1) {
+  boolean reset = false;
+  if (next_active_scene_index >= scenes.size()) {
     next_active_scene_index = 0;
+
+    for (Dot dot : dots) {
+      dot.reset();
+      dot.draw();
+    }
+
+    reset = true;
   }
-  set_active_scene(next_active_scene_index);
+  println("active_scene_index: " + next_active_scene_index);
+  set_active_scene(next_active_scene_index, reset);
 }
 
 void draw_dots() {
@@ -428,9 +454,12 @@ void draw_dots() {
   ambientLight(255, 255, 255);
   boolean go_to_next_scene = true;
   for (Dot dot : dots) {
+    if (reset) dot.reset();
     dot.draw();
     //if(!dot.animation_done) go_to_next_scene = false;
   }
+
+  if (reset) reset = false;
 
   if (millis() < active_scene.end_time) go_to_next_scene = false;
 
@@ -483,7 +512,7 @@ class Label {
 
     switch(type) {
       case LABEl_TYPE.YEAR:
-        return t.length() + 5 * 10;
+        return t.length() + 5 * 18;
       case LABEl_TYPE.REGION:
         return t.length() + 20 * 10;
 
@@ -497,12 +526,11 @@ class Label {
         return str(active_scene.year);
       case LABEl_TYPE.REGION:
         if (active_scene.name.equals(this.region.name)) {
-          println(active_scene.total);
-          return str(active_scene.total);
+          return active_scene.total_text;
         } else {
           for (Scene scene: active_scene.child_scenes) {
             if (scene.name.equals(this.region.name)) {
-              return str(scene.total);
+              return scene.total_text;
             }
           }
         }
@@ -541,10 +569,6 @@ class Region {
     this.id = id;
   }
 
-  // void create_label(int number) {
-  //   Label label_object.update(this.label + " " + new String(number));
-  // }
-
   void set_name(String name) {
     this.name = name;
   }
@@ -574,7 +598,7 @@ class Region {
     }
     catch (NullPointerException error)
     {
-      print("no file availible");
+      println("no file availible");
     }
   }
 
@@ -591,6 +615,7 @@ class Scene {
   public String parent;
 
   public long total;
+  public String total_text;
   public int increase;
   public int migration;
   public int change;
@@ -618,8 +643,9 @@ class Scene {
     this.year = year;
   }
 
-  void set_total(long total) {
-    this.total = total;
+  void set_total(String total) {
+    this.total = Long.parseLong(total);
+    this.total_text = total;
   }
 
   void set_increase(int increase) {
@@ -658,8 +684,6 @@ class Dot {
   public boolean animation_done = true;
 
   public color color_code;
-
-  public ArrayList<Dot> inner_dots = new ArrayList<Dot>();
 
   Ani zAnim;
 
@@ -729,19 +753,31 @@ class Dot {
     );
   }
 
+  public void reset () {
+    this.target = this.orignal;
+    this.pos = this.orignal;
+    this.x = parseInt(this.orignal.x);
+    this.y = parseInt(this.orignal.y);
+    this.z = parseInt(this.orignal.z);
+    this.disapear = 0;
+    this.reapear = 0;
+    this.animation_done = true;
+  }
+
   public void increase() {
     this.reapear = 0;
     this.disapear = 1;
     this.animation_done = false;
     this.target = new PVector(this.pos.x, this.pos.y, this.pos.z + 40);
-    zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+
+    zAnim = Ani.to(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
   public void decrease() {
     this.reapear = 1;
     this.disapear = 0;
     this.target = new PVector(this.pos.x, this.pos.y, this.pos.z - 40);
-    zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
+    zAnim = Ani.to(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
   }
 
   void finish_anim(Ani anim) {
