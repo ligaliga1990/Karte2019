@@ -1,8 +1,8 @@
-ID,NAME,PARENT,LABEL,COLOR,IMAGE
-1,LATVIJA,,L,ffffff,images/map_latvia.png
-2,RIGA,LATVIJA,R,ffffff,images/map_riga.png
-3,PIERIGA,LATVIJA,PR,ffffff,images/map_pieriga.png
-4,VIDZEME,LATVIJA,V,ffffff,images/map_vidzeme.png
-5,KURZEME,LATVIJA,K,ffffff,images/map_kurzeme.png
-6,ZEMGALE,LATVIJA,Z,ffffff,images/map_zemgale.png
-7,LATGALE,LATVIJA,L,ffffff,images/map_latgale.png
+ID,NAME,PARENT,LABEL,COLOR,LABEL_X,LABEL_Y,FONT_SIZE,IMAGE
+1,LATVIJA,,L,ffffff,50,1000,18,images/map_latvia.png
+2,RIGA,LATVIJA,R,ffffff,200,1000,19,images/map_riga.png
+3,PIERIGA,LATVIJA,PR,ffffff,300,1000,20,images/map_pieriga.png
+4,VIDZEME,LATVIJA,V,ffffff,400,1000,21,images/map_vidzeme.png
+5,KURZEME,LATVIJA,K,ffffff,500,1000,22,images/map_kurzeme.png
+6,ZEMGALE,LATVIJA,Z,ffffff,600,1000,23,images/map_zemgale.png
+7,LATGALE,LATVIJA,L,ffffff,700,1000,24,images/map_latgale.png
