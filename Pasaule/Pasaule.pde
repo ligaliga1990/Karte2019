@@ -82,8 +82,19 @@ void setup() {
 void load_labels() {
   labels.add(new Label("", LABEl_TYPE.YEAR));
   create_regions_labels(regions);
-  for(int index = 0; index < labels.size(); index++) {
-    labels.get(index).set_pos(new PVector(width / labels.size() * index + 10, height - 50));
+
+  int min_width = 100;
+  float label_width = width / labels.size();
+
+  int index = 0;
+  for(int i = 1; i <= 2; i++) {
+    for(int j = 0; j < labels.size() / 2; j++) {
+      Label label = labels.get(index);
+      label.set_pos(
+        new PVector(j * (label.get_length() + min_width), height - 50 / i)
+      );
+      index++;
+    }
   }
   println("labels count: " + labels.size());
 }
@@ -442,12 +453,15 @@ class Label {
   boolean pos_set = false;
   PVector pos;
   color color_code;
+  int length;
 
   Label(String label, int type, Region region) {
     this.label = label;
     this.type = type;
     this.region = region;
     this.color_code = region.color_code;
+
+
   }
 
   Label(String label, int type) {
@@ -459,6 +473,17 @@ class Label {
   void set_pos(PVector pos) {
     this.pos = pos;
     this.pos_set = true;
+  }
+
+  int get_length() {
+    String new_text = label + " " + text;
+     switch(type) {
+      case LABEl_TYPE.YEAR:
+        return new_text.length();
+      case LABEl_TYPE.REGION:
+        return new_text.length() + 150;
+    }
+    return new_text.length();
   }
 
   String get_text() {
@@ -476,10 +501,6 @@ class Label {
           }
         }
     }
-
-    if (type == LABEl_TYPE.YEAR) {
-      return str(active_scene.year);
-    } else
     return "";
   }
 
@@ -686,35 +707,20 @@ class Dot {
   public void draw() {
 
     if (this.disapear == 0 && this.reapear == 0) z_startup_position();
-    if(this.disapear == 1 && animation_done) this.increase();
-    else if(this.reapear == 1 && animation_done) this.decrease();
+    if(this.disapear == 1 && animation_done) this.decrease();
+    else if(this.reapear == 1 && animation_done) this.increase();
 
     // draws a sphere at x,y,z with size sizeSphere
     strokeWeight(radius * 2);
 
-    if (this.disapear == 2 && this.animation_done ) {
-      stroke(this.color_code, alpha(255));
-      fill(this.color_code, alpha(255));
-    } else if (this.disapear == 1) {
-      int map_v = parseInt(map(z, 0, 1500, 255, 0));
-      //println("z: " + z + " map: " + map_v );
-      stroke(this.color_code, map_v);
-      fill(this.color_code, map_v);
-    } else if (this.reapear == 1) {
-      int map_v = parseInt(map(z, 1500, 0, 0, 255));
-      //println("z: " + z + " map: " + map_v );
-      stroke(this.color_code, map_v);
-      fill(this.color_code, map_v);
-    } else {
-      stroke(this.color_code);
-      fill(this.color_code);
-    }
+    stroke(this.color_code);
+    fill(this.color_code);
 
-    for (int new_z = parseInt(this.orignal.z); new_z != this.target.z; new_z -= 1) {
-      point(this.x, this.y, new_z);
-    }
-
-    point(this.x, this.y, this.z);
+    point(parseInt(this.orignal.x), parseInt(this.orignal.y), parseInt(this.orignal.z));
+    line(
+      this.orignal.x, this.orignal.y, this.orignal.z,
+      parseFloat(this.x), parseFloat(this.y), parseFloat(this.z)
+    );
   }
 
   public void increase() {
