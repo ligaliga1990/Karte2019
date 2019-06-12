@@ -37,7 +37,7 @@ int max_total_people;
 int people_per_dot;
 
 
-final int label_year_x = 50;
+final int label_year_x = 20;
 final int label_year_y = 1000;
 final int label_year_font_size = 18;
 
@@ -504,10 +504,6 @@ class Label {
           }
         }
     }
-
-    if (type == LABEl_TYPE.YEAR) {
-      return str(active_scene.year);
-    } else
     return "";
   }
 

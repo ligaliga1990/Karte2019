@@ -27,19 +27,26 @@ int columns;
 int active_scene_index = 0;
 Scene active_scene;
 
+
+
 // sphere data and offsets
 int default_radius = 4;
 float space = default_radius * 2;
 float offset = default_radius * 2;
 int sphere_detail_nr = 20;
 
-long max_total_people = 0;
-long people_per_dot = 0;
+long max_total_people;
+long people_per_dot;
+
+final int label_year_x = 20;
+final int label_year_y = 1000;
+final int label_year_font_size = 18;
 
 Ani global;
 
-
 boolean reset = false;
+
+
 
 
 ArrayList<Region> regions = new ArrayList<Region>();
@@ -90,24 +97,6 @@ void setup() {
 void load_labels() {
   labels.add(new Label("", LABEl_TYPE.YEAR));
   create_regions_labels(regions);
-
-  int min_width = 100;
-  float label_width = width / labels.size();
-
-  int index = 0;
-  for(int i = 1; i <= 2; i++) {
-    int previus_length = 30;
-    for(int j = 0; j < labels.size() / 2; j++) {
-      Label label = labels.get(index);
-
-      label.set_pos(
-        new PVector(previus_length + 30, height - 50 / i)
-      );
-      previus_length += label.get_length();
-      index++;
-    }
-  }
-  println("labels count: " + labels.size());
 }
 
 void create_regions_labels(ArrayList<Region> p_regions) {
@@ -222,6 +211,11 @@ Region create_region(TableRow row) {
   region.set_parent(new String(trim(row.getString("PARENT"))));
   region.set_label(new String(trim(row.getString("LABEL"))));
   region.set_image(new String(trim(row.getString("IMAGE"))));
+
+  int label_x = row.getInt("LABEL_X");
+  int label_y = row.getInt("LABEL_Y");
+  int font_size = row.getInt("FONT_SIZE");
+  region.set_label_position(label_x, label_y, font_size);
 
 
   color color_code = color(unhex(trim(row.getString("COLOR")))) | 0xff000000;
@@ -485,7 +479,9 @@ class Label {
   boolean pos_set = false;
   PVector pos;
   color color_code;
-  int length;
+  int x;
+  int y;
+  int font_size;
 
   Label(String label, int type, Region region) {
     this.label = label;
@@ -493,6 +489,10 @@ class Label {
     this.region = region;
     this.color_code = region.color_code;
 
+    this.x = region.label_x;
+    this.y = region.label_y;
+    this.font_size = region.font_size;
+    this.pos_set = true;
 
   }
 
@@ -500,6 +500,10 @@ class Label {
     this.label = label;
     this.type = type;
     this.color_code = #ffffff;
+    this.x = label_year_x;
+    this.y = label_year_y;
+    this.font_size = label_year_font_size;
+    this.pos_set = true;
   }
 
   void set_pos(PVector pos) {
@@ -543,9 +547,9 @@ class Label {
     this.text = get_text();
 
     if (this.pos_set) {
-      textSize(18);
+      textSize(this.font_size);
       fill(this.color_code);
-      text(this.label + " " + this.text, this.pos.x, this.pos.y);
+      text(this.label + " " + this.text, this.x, this.y);
     }
   }
 }
@@ -562,11 +566,21 @@ class Region {
 
   Label label_object;
 
+  int label_x;
+  int label_y;
+  int font_size;
+
 
   ArrayList<Region> child_regions = new ArrayList<Region>();
 
   Region(int id) {
     this.id = id;
+  }
+
+  void set_label_position(int x, int y, int font_size) {
+    this.label_x = x;
+    this.label_y = y;
+    this.font_size = font_size;
   }
 
   void set_name(String name) {
