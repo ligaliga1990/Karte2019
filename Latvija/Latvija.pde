@@ -75,7 +75,7 @@ void setup() {
 
   if (dots.size() > 0) people_per_dot = max_total_people / dots.size();
   int divider = 2;
-  people_per_dot = people_per_dot / divider;
+  people_per_dot = people_per_dot;
 
   println("dots: " + dots.size());
   println("max total people: " + max_total_people);
@@ -161,6 +161,8 @@ void load_scene_data() {
   println(rows + " total rows in table");
   println(columns + " total rows in table");
 
+  int total_change = 0;
+
   for (TableRow row : table.rows()) {
     String name = row.getString("NAME");
     String parent = row.getString("PARENT");
@@ -168,6 +170,7 @@ void load_scene_data() {
 
     if (parent.length() == 0) {
       Scene new_scene = create_scene(row);
+      total_change += new_scene.change;
       scenes.add(new_scene);
       if (max_total_people < new_scene.total) {
         max_total_people = new_scene.total;
@@ -182,7 +185,47 @@ void load_scene_data() {
     }
   }
 
+  Scene last_scene = scenes.get(scenes.size() - 1);
+  int change = total_change / scenes.size() / 2;
+  long total = last_scene.total;
+
+  println("change " + change);
+  println("total " + total);
+
+  int index = 1;
+  while (total > 0) {
+    int change_new = parseInt(random(change / 2, change));
+    int year_plus = parseInt(pow(index, 3));
+    total = total + (change_new * year_plus);
+    Scene new_scene = create_virtual_scene(scenes.get(scenes.size() - 1), parseInt(total), year_plus, change_new);
+
+    scenes.add(new_scene);
+    index++;
+  }
+
   active_scene = scenes.get(0);
+}
+
+Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int change_per_year) {
+  Scene scene = new Scene(previous_scene.id + 1);
+
+  if (total < 0) {
+    total = 0;
+  }
+
+  scene.set_name(previous_scene.name);
+  scene.set_parent(previous_scene.parent);
+  scene.set_year(previous_scene.year + year_jump);
+  scene.set_total(total);
+  scene.set_increase(previous_scene.increase * year_jump);
+  scene.set_migration(previous_scene.migration * year_jump);
+  scene.set_change(change_per_year * year_jump);
+
+  // for(Scene child_scene: previous_scene.child_scenes) {
+  //   scene.add_child_scene(create_virtual_scene(child_scene));
+  // }
+
+  return scene;
 }
 
 Scene create_scene(TableRow row) {
@@ -310,81 +353,103 @@ void process_active_scene_data() {
   boolean remove = (active_scene.change < 0);
   int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
 
+
+  ArrayList<Dot> available_dots = new ArrayList<Dot>();
+
+  for (Dot dot: dots) {
+    if (dot.disapear != 0) continue;
+    //if (dot.reapear != 0) continue;
+    available_dots.add(dot);
+  }
+
+  if (available_dots.size() < changable_dots) changable_dots = available_dots.size();
+  if (scenes.size() - 1 == active_scene_index) changable_dots = available_dots.size();
+
+  println("");
+  println("scene year: " + active_scene.year);
+  println("scene index: " + active_scene_index + "  scenes size: " + (scenes.size() - 1));
+  println("scene change: " + active_scene.change);
   println("total changable dots: " + changable_dots);
+  println("total available dots: " + available_dots.size());
 
-  for( Scene child_scene: active_scene.child_scenes) {
-    boolean child_remove = (child_scene.change < 0);
-    int child_changable_dots = abs(parseInt(child_scene.change) / parseInt(people_per_dot));
+  if (active_scene.child_scenes.size() != 0) {
+    for( Scene child_scene: active_scene.child_scenes) {
+      boolean child_remove = (child_scene.change < 0);
+      int child_changable_dots = abs(parseInt(child_scene.change) / parseInt(people_per_dot));
 
-    String child_region_name = child_scene.name;
+      String child_region_name = child_scene.name;
 
-    ArrayList<Dot> child_dots = new ArrayList<Dot>();
-    ArrayList<Dot> disapearable_child_dots = new ArrayList<Dot>();
-    ArrayList<Dot> reapearable_child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> disapearable_child_dots = new ArrayList<Dot>();
+      ArrayList<Dot> reapearable_child_dots = new ArrayList<Dot>();
 
 
-    for (Dot dot: dots) {
-      if (dot.region_name.equals(child_region_name)) {
-        child_dots.add(dot);
+      for (Dot dot: dots) {
+        if (dot.region_name.equals(child_region_name)) {
+          child_dots.add(dot);
 
-        if (dot.disapear == 0 ) {
-          disapearable_child_dots.add(dot);
-        }
-
-        if (dot.disapear != 0 && dot.reapear == 0) {
-          reapearable_child_dots.add(dot);
-        }
-      }
-    }
-
-    int changed_dots = 0;
-    int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
-
-    if (available_changable_dots > 0) {
-      while (child_changable_dots > 0) {
-        if (disapearable_child_dots.size() == 0 && reapearable_child_dots.size() == 0 ) break;
-        if (available_changable_dots == changed_dots) break;
-
-        boolean decrease = false;
-
-        if(child_remove) {
-          int dot_index = parseInt(random(0, disapearable_child_dots.size()));
-          if (disapearable_child_dots.get(dot_index).disapear == 0) {
-            child_dots.get(dot_index).disapear = 1;
-            decrease = true;
+          if (dot.disapear == 0 ) {
+            disapearable_child_dots.add(dot);
           }
-        } else {
-          int dot_index = parseInt(random(0, reapearable_child_dots.size()));
-          if( child_dots.get(dot_index).reapear == 0) {
-            // TODO: get disapear list
-            child_dots.get(dot_index).reapear = 1;
-            decrease = true;
+
+          if (dot.disapear != 0 && dot.reapear == 0) {
+            reapearable_child_dots.add(dot);
           }
         }
+      }
 
-        if (decrease) {
-          child_changable_dots --;
-          changed_dots ++;
+      int changed_dots = 0;
+      int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
+
+      if (available_changable_dots > 0) {
+        while (child_changable_dots > 0) {
+          if (available_changable_dots == changed_dots) break;
+
+          boolean decrease = false;
+
+          if(child_remove) {
+            int dot_index = parseInt(random(0, disapearable_child_dots.size()));
+            if (disapearable_child_dots.get(dot_index).disapear == 0) {
+              child_dots.get(dot_index).disapear = 1;
+              child_dots.get(dot_index).animation_done = true;
+              decrease = true;
+            }
+          } else {
+            int dot_index = parseInt(random(0, reapearable_child_dots.size()));
+            if( child_dots.get(dot_index).reapear == 0) {
+              // TODO: get disapear list
+              child_dots.get(dot_index).reapear = 1;
+              child_dots.get(dot_index).animation_done = true;
+              decrease = true;
+            }
+          }
+
+          if (decrease) {
+            child_changable_dots --;
+            changed_dots ++;
+          }
         }
       }
-    }
 
-    changable_dots = changable_dots - changed_dots;
+      changable_dots = changable_dots - changed_dots;
+    }
   }
 
   while (changable_dots > 0) {
-    int dot_index = parseInt(random(0, dots.size()));
+    int dot_index = parseInt(random(0, available_dots.size()));
     boolean decrease = false;
     if(remove) {
-      if (dots.get(dot_index).disapear == 0) {
-        dots.get(dot_index).disapear = 1;
+      if (available_dots.get(dot_index).disapear == 0) {
+        available_dots.get(dot_index).disapear = 1;
+        available_dots.get(dot_index).animation_done = true;
         decrease = true;
         //println("disapear "+ dots.get(dot_index).disapear);
       }
     } else {
-      if( dots.get(dot_index).reapear  == 0) {
+      if( available_dots.get(dot_index).reapear  == 0) {
         // TODO: get disapear list
-        dots.get(dot_index).reapear = 1;
+        available_dots.get(dot_index).reapear = 1;
+        available_dots.get(dot_index).animation_done = true;
         decrease = true;
       }
     }
@@ -416,14 +481,25 @@ int get_coord_alpha_value(PImage img, int x, int y) {
 void load_next_scene() {
   int next_active_scene_index =  active_scene_index + 1;
   if (next_active_scene_index > scenes.size() - 1) {
-    next_active_scene_index = 0;
-    Ani.killAll();
+    boolean is_playing = false;
     for (Dot dot : dots) {
-      dot.reset();
+      if( dot.zAnim != null && !dot.animation_done) {
+        is_playing = true;
+        break;
+      }
     }
+    println("is_playing: " + is_playing);
+    if (!is_playing) {
+      next_active_scene_index = 0;
+      Ani.killAll();
+      for (Dot dot : dots) {
+        dot.reset();
+      }
+      set_active_scene(next_active_scene_index);
+    }
+  } else {
+    set_active_scene(next_active_scene_index);
   }
-
-  set_active_scene(next_active_scene_index);
 }
 
 void draw_dots() {
@@ -658,7 +734,7 @@ class Dot {
 
   Ani zAnim;
 
-  float duration = random(5, 20);
+  float duration = (scene_interval > 5000) ? random(5, 20): scene_interval / 1000;
   float the_delay = random(0, 5);
 
 
@@ -740,8 +816,8 @@ class Dot {
       println("disapear error:");
       println(error);
       println("target coord: " + this.target );
-      this.disapear = 0;
-      this.animation_done = true;
+
+      this.finish();
     }
   }
 
@@ -756,12 +832,15 @@ class Dot {
       println("reaper error:");
       println(error);
       println("target coord: " + this.target );
-      this.disapear = 0;
-      this.animation_done = true;
+      this.finish();
     }
   }
 
   void finish_anim(Ani anim) {
+    this.finish();
+  }
+
+  void finish() {
     this.pos = this.target;
     this.x = parseInt(this.target.x);
     this.y = parseInt(this.target.y);

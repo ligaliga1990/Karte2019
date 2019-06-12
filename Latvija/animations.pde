@@ -15,4 +15,4 @@ Easing currentEasing = easings[anim_index];
 int z_animation = Z_ANIMS.JUMP;
 int z_random_distance = 0; //maina kartes pametnes leksananas augstumu - flaberigumu
 
-int scene_interval = 7000;
+int scene_interval = 5000;
