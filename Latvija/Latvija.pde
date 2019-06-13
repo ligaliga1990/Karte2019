@@ -41,6 +41,8 @@ final int label_year_x = 20;
 final int label_year_y = 1000;
 final int label_year_font_size = 18;
 
+float percents = 2.1;
+
 
 ArrayList<Region> regions = new ArrayList<Region>();
 ArrayList<Dot> dots = new ArrayList<Dot>();
@@ -58,8 +60,8 @@ void setup() {
   app_width = displayWidth - offset;
   app_height = displayHeight - offset;
 
-  println("Screen Size width: " + app_width);
-  println("Screen Size height: " + app_height);
+  //println("Screen Size width: " + app_width);
+  //println("Screen Size height: " + app_height);
 
   // Add 3D world camera
   camera = new PeasyCam(this, displayWidth / 2, displayHeight / 2, 0, 1000);
@@ -77,11 +79,11 @@ void setup() {
   int divider = 2;
   people_per_dot = people_per_dot;
 
-  println("dots: " + dots.size());
-  println("max total people: " + max_total_people);
-  println("peopel per dot: " + people_per_dot);
+  //println("dots: " + dots.size());
+  //println("max total people: " + max_total_people);
+  //println("peopel per dot: " + people_per_dot);
 
-  println("peopel per dot diveded by " + divider + ": " + people_per_dot);
+  //println("peopel per dot diveded by " + divider + ": " + people_per_dot);
   set_active_scene(0);
   load_labels();
 }
@@ -106,20 +108,16 @@ void create_regions_labels(ArrayList<Region> p_regions) {
 
 
 void load_regions_data() {
-  println("==> Load regions data:");
+  //println("==> Load regions data:");
   table = loadTable(data_regions,"header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
   int columns = table.getColumnCount();
   int rows = table.getRowCount();
 
-  println(rows + " total rows in regions table");
-  println(columns + " total columns in regions table");
+  //println(rows + " total rows in regions table");
+  //println(columns + " total columns in regions table");
 
   for (TableRow row : table.rows()) {
-    String name = trim(row.getString("NAME"));
     String parent = new String(trim(row.getString("PARENT")));
-    String label = row.getString("LABEL");
-    String color_code = row.getString("COLOR");
-    String image = trim(row.getString("IMAGE"));
 
     Region new_region = create_region(row);
 
@@ -152,19 +150,18 @@ ArrayList<Region> find_parent_region(ArrayList<Region> passed_regions, String pa
 
 
 void load_scene_data() {
-  println("==> Load population data:");
+  //println("==> Load population data:");
   table = loadTable(data_population,"header"); // sketch mapē ir dati saglabāti csv failā, kas ar notepad ir pārveidots, lai visu atdala komati
 
   int columns = table.getColumnCount();
   int rows = table.getRowCount();
 
-  println(rows + " total rows in table");
-  println(columns + " total rows in table");
+  //println(rows + " total rows in table");
+  //println(columns + " total rows in table");
 
   int total_change = 0;
 
   for (TableRow row : table.rows()) {
-    String name = row.getString("NAME");
     String parent = row.getString("PARENT");
     int year = row.getInt("YEAR");
 
@@ -180,6 +177,12 @@ void load_scene_data() {
         if(scene.name.equals(parent) && scene.year == year) {
           Scene new_child_scene = create_scene(row);
           scene.add_child_scene(new_child_scene);
+
+          Region region = get_region_by_name(new_child_scene.name);
+          region.average += new_child_scene.change;
+          region.average_cnt += 1;
+          region.last_scene = new_child_scene;
+          region.total = new_child_scene.total;
         }
       }
     }
@@ -189,21 +192,54 @@ void load_scene_data() {
   int change = total_change / scenes.size() / 2;
   long total = last_scene.total;
 
-  println("change " + change);
-  println("total " + total);
+  //println("last data change " + change);
+  //println("last data total " + total);
 
   int index = 1;
   while (total > 0) {
-    int change_new = parseInt(random(change / 2, change));
-    int year_plus = parseInt(pow(index, 3));
+    int change_new = change;
+    int year_plus = parseInt(pow(index, 2));
     total = total + (change_new * year_plus);
+    //println("");
+    //println("create virtual scene, year: " + (scenes.get(scenes.size() - 1).year + year_plus) );
     Scene new_scene = create_virtual_scene(scenes.get(scenes.size() - 1), parseInt(total), year_plus, change_new);
 
     scenes.add(new_scene);
     index++;
   }
 
+  correct_virtual_scene_totals(last_scene.year);
   active_scene = scenes.get(0);
+}
+
+void correct_virtual_scene_totals(int up_year) {
+  for(Scene scene: scenes) {
+    if (scene.year > up_year) {
+      long total = scene.total;
+      long child_total = 0;
+      for (Scene child_scene: scene.child_scenes) {
+        child_total += child_scene.total;
+      }
+
+      if (total != child_total) {
+        int diff_per_child = 0;
+
+        if (total < child_total) {
+          long diff = child_total - total;
+          diff_per_child = parseInt(diff / scene.child_scenes.size());
+          diff_per_child = diff_per_child * -1;
+        } else {
+          long diff = total - child_total;
+          diff_per_child = parseInt(diff / scene.child_scenes.size());
+        }
+
+        for (Scene child_scene: scene.child_scenes) {
+          child_scene.total += diff_per_child;
+          if (child_scene.total < 0) child_scene.total = 0;
+        }
+      }
+    }
+  }
 }
 
 Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int change_per_year) {
@@ -213,6 +249,7 @@ Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int c
     total = 0;
   }
 
+
   scene.set_name(previous_scene.name);
   scene.set_parent(previous_scene.parent);
   scene.set_year(previous_scene.year + year_jump);
@@ -221,11 +258,47 @@ Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int c
   scene.set_migration(previous_scene.migration * year_jump);
   scene.set_change(change_per_year * year_jump);
 
-  // for(Scene child_scene: previous_scene.child_scenes) {
-  //   scene.add_child_scene(create_virtual_scene(child_scene));
-  // }
+  int change_total_by_regions = 0;
+  for(Scene child_scene: previous_scene.child_scenes) {
+    Region region = get_region_by_name(child_scene.name);
+    int child_change_per_year = region.get_change_per_year();
+
+    int change = parseInt(child_change_per_year * year_jump);
+    long child_total = region.total + change;
+
+    if (total == 0) child_total = 0;
+    //println("");
+    //println("name: " + region.name);
+    //println("change: " + change);
+    //println("region total: " + region.total);
+    //println("total: " + child_total);
+    scene.add_child_scene(create_virtual_scene(region.last_scene, parseInt(child_total), year_jump, child_change_per_year));
+    //region.total = region.total;
+    change_total_by_regions += change;
+  }
+
+  if (previous_scene.parent.length() == 0) {
+    //println("percent " + percents);
+    //println("LV total change per year: " + change_per_year * year_jump);
+    //println("Regions total change per year: " + change_total_by_regions);
+  }
 
   return scene;
+}
+
+Region get_region_by_name(String region_name) {
+  for (Region region: regions) {
+    if(region.name.equals(region_name)) {
+      return region;
+    }
+    for (Region child_region: region.child_regions) {
+      if(child_region.name.equals(region_name)) {
+        return child_region;
+      }
+    }
+  }
+
+  return new Region();
 }
 
 Scene create_scene(TableRow row) {
@@ -279,7 +352,6 @@ void get_dots() {
       PVector pos = new PVector(x , y, z);
 
       boolean skip = false;
-      int should_be_added = 1;
 
       for (Region region: regions) {
         if(region.image.width < pos.x || region.image.height - 30 < pos.y) {
@@ -365,69 +437,62 @@ void process_active_scene_data() {
   if (available_dots.size() < changable_dots) changable_dots = available_dots.size();
   if (scenes.size() - 1 == active_scene_index) changable_dots = available_dots.size();
 
-  println("");
-  println("scene year: " + active_scene.year);
-  println("scene index: " + active_scene_index + "  scenes size: " + (scenes.size() - 1));
-  println("scene change: " + active_scene.change);
-  println("total changable dots: " + changable_dots);
-  println("total available dots: " + available_dots.size());
+  //println("");
+  //println("scene year: " + active_scene.year);
+  //println("scene index: " + active_scene_index + "  scenes size: " + (scenes.size() - 1));
+  //println("scene change: " + active_scene.change);
+  //println("scene total: " + active_scene.total);
+  //println("total changable dots: " + changable_dots);
+  //println("total available dots: " + available_dots.size());
 
   if (active_scene.child_scenes.size() != 0) {
     for( Scene child_scene: active_scene.child_scenes) {
       boolean child_remove = (child_scene.change < 0);
-      int child_changable_dots = abs(parseInt(child_scene.change) / parseInt(people_per_dot));
+      int child_changable_dots = abs(parseInt(child_scene.change / people_per_dot));
+
+      //println("--- scene name: " + child_scene.name);
+      //println("child scene change: " + child_scene.change);
+      //println("child scene total: " + child_scene.total);
+      //println("child total changable dots: " + child_changable_dots);
 
       String child_region_name = child_scene.name;
-
       ArrayList<Dot> child_dots = new ArrayList<Dot>();
-      ArrayList<Dot> disapearable_child_dots = new ArrayList<Dot>();
-      ArrayList<Dot> reapearable_child_dots = new ArrayList<Dot>();
 
 
       for (Dot dot: dots) {
         if (dot.region_name.equals(child_region_name)) {
           child_dots.add(dot);
-
-          if (dot.disapear == 0 ) {
-            disapearable_child_dots.add(dot);
-          }
-
-          if (dot.disapear != 0 && dot.reapear == 0) {
-            reapearable_child_dots.add(dot);
-          }
         }
       }
 
       int changed_dots = 0;
-      int available_changable_dots = disapearable_child_dots.size() + reapearable_child_dots.size();
 
-      if (available_changable_dots > 0) {
-        while (child_changable_dots > 0) {
-          if (available_changable_dots == changed_dots) break;
+      while (child_changable_dots > 0) {
+        ArrayList<Dot> available_child_dots = get_filtered_dot_list(child_dots, child_remove);
 
-          boolean decrease = false;
+        if (available_child_dots.size() == 0) break;
+        if (available_child_dots.size() == changed_dots) break;
 
-          if(child_remove) {
-            int dot_index = parseInt(random(0, disapearable_child_dots.size()));
-            if (disapearable_child_dots.get(dot_index).disapear == 0) {
-              child_dots.get(dot_index).disapear = 1;
-              child_dots.get(dot_index).animation_done = true;
-              decrease = true;
-            }
-          } else {
-            int dot_index = parseInt(random(0, reapearable_child_dots.size()));
-            if( child_dots.get(dot_index).reapear == 0) {
-              // TODO: get disapear list
-              child_dots.get(dot_index).reapear = 1;
-              child_dots.get(dot_index).animation_done = true;
-              decrease = true;
-            }
+        boolean decrease = false;
+        int dot_index = parseInt(random(0, available_child_dots.size()));
+
+        if(child_remove) {
+          if (available_child_dots.get(dot_index).disapear == 0) {
+            available_child_dots.get(dot_index).disapear = 1;
+            available_child_dots.get(dot_index).animation_done = true;
+            decrease = true;
           }
-
-          if (decrease) {
-            child_changable_dots --;
-            changed_dots ++;
+        } else {
+          if( available_child_dots.get(dot_index).reapear == 0) {
+            available_child_dots.get(dot_index).reapear = 1;
+            available_child_dots.get(dot_index).animation_done = true;
+            decrease = true;
           }
+        }
+
+        if (decrease) {
+          child_changable_dots --;
+          changed_dots ++;
         }
       }
 
@@ -443,7 +508,7 @@ void process_active_scene_data() {
         available_dots.get(dot_index).disapear = 1;
         available_dots.get(dot_index).animation_done = true;
         decrease = true;
-        //println("disapear "+ dots.get(dot_index).disapear);
+        ////println("disapear "+ dots.get(dot_index).disapear);
       }
     } else {
       if( available_dots.get(dot_index).reapear  == 0) {
@@ -458,6 +523,18 @@ void process_active_scene_data() {
   }
 
   active_scene.start();
+}
+
+ArrayList<Dot> get_filtered_dot_list(ArrayList<Dot> p_dots, boolean disapear) {
+  ArrayList<Dot> filtered_child_dots = new ArrayList<Dot>();
+  for (Dot p_dot: p_dots) {
+    if (disapear && p_dot.disapear == 0 ) {
+      filtered_child_dots.add(p_dot);
+    } else if (!disapear && p_dot.reapear == 0) {
+      filtered_child_dots.add(p_dot);
+    }
+  }
+  return filtered_child_dots;
 }
 
 
@@ -488,7 +565,6 @@ void load_next_scene() {
         break;
       }
     }
-    println("is_playing: " + is_playing);
     if (!is_playing) {
       next_active_scene_index = 0;
       Ani.killAll();
@@ -611,11 +687,22 @@ class Region {
   int label_y;
   int font_size;
 
+  long total = 0;
+  long average = 0;
+  int average_cnt = 0;
+  Scene last_scene;
 
   ArrayList<Region> child_regions = new ArrayList<Region>();
 
   Region(int id) {
     this.id = id;
+  }
+
+  Region(){}
+
+  int get_change_per_year() {
+    int average_data = parseInt(this.average / this.average_cnt);
+    return parseInt(average_data / 2 - (average_data / 100 * percents));
   }
 
   void set_label_position(int x, int y, int font_size) {
@@ -647,8 +734,8 @@ class Region {
     this.image = loadImage(image_path);
     this.image.resize(displayWidth, displayHeight);
 
-    println("Image " + this.image_path + " width: " + this.image.width);
-    println("Image " + this.image_path + "  height: " + this.image.height);
+    //println("Image " + this.image_path + " width: " + this.image.width);
+    //println("Image " + this.image_path + "  height: " + this.image.height);
   }
 
   void add_child_scene(Region child_region) {
@@ -734,7 +821,7 @@ class Dot {
 
   Ani zAnim;
 
-  float duration = (scene_interval > 5000) ? random(5, 20): scene_interval / 1000;
+  float duration = (scene_interval >= 4000) ? random(5, 20): random(scene_interval / 1000, scene_interval / 1000 * 2);
   float the_delay = random(0, 5);
 
 
@@ -790,11 +877,11 @@ class Dot {
       fill(this.color_code, alpha(255));
     else if (this.disapear == 1) {
       int map_v = parseInt(map(z, 0, 1500, 255, 0));
-      //println("z: " + z + " map: " + map_v );
+      ////println("z: " + z + " map: " + map_v );
       fill(this.color_code, map_v);
     } else if (this.reapear == 1) {
       int map_v = parseInt(map(z, 1500, 0, 0, 255));
-      //println("z: " + z + " map: " + map_v );
+      ////println("z: " + z + " map: " + map_v );
       fill(this.color_code, map_v);
     } else
       fill(this.color_code);
@@ -813,9 +900,9 @@ class Dot {
       this.target = new PVector(this.pos.x, this.pos.y, 1500);
       zAnim = new Ani(this, duration, the_delay, "z", target.z, Ani.QUAD_OUT, "onEnd:finish_anim");
     } catch (Exception error) {
-      println("disapear error:");
-      println(error);
-      println("target coord: " + this.target );
+      //println("disapear error:");
+      //println(error);
+      //println("target coord: " + this.target );
 
       this.finish();
     }
@@ -829,9 +916,9 @@ class Dot {
       this.target = this.orignal;
       zAnim = new Ani(this, duration, the_delay, "z", orignal.z, Ani.QUAD_OUT, "onEnd:finish_anim");
     } catch (Exception error) {
-      println("reaper error:");
-      println(error);
-      println("target coord: " + this.target );
+      //println("reaper error:");
+      //println(error);
+      //println("target coord: " + this.target );
       this.finish();
     }
   }
