@@ -76,8 +76,6 @@ void setup() {
   load_scene_data();
 
   if (dots.size() > 0) people_per_dot = max_total_people / dots.size();
-  int divider = 2;
-  people_per_dot = people_per_dot;
 
   //println("dots: " + dots.size());
   //println("max total people: " + max_total_people);
@@ -182,28 +180,39 @@ void load_scene_data() {
           region.average += new_child_scene.change;
           region.average_cnt += 1;
           region.last_scene = new_child_scene;
-          region.total = new_child_scene.total;
+          region.total = new_child_scene.total + new_child_scene.change;
         }
       }
     }
   }
 
   Scene last_scene = scenes.get(scenes.size() - 1);
-  int change = total_change / scenes.size() / 2;
-  long total = last_scene.total;
+  int change_per_year = total_change / scenes.size();
+  long last_total = last_scene.total + last_scene.change;
+
+  println("year: " + last_scene.year);
+  println("change_per_year: " + change_per_year);
+  println("last_total: " + last_total);
+
+  int zero_year_plus = parseInt(last_total / abs(change_per_year)) + 2;
+  println(last_scene.year + zero_year_plus);
 
   //println("last data change " + change);
   //println("last data total " + total);
 
   int index = 1;
+  long total = last_total;
   while (total > 0) {
-    int change_new = change;
     int year_plus = parseInt(pow(index, 2));
-    total = total + (change_new * year_plus);
+
+    if (year_plus > zero_year_plus) year_plus = zero_year_plus;
+    total = last_total + (change_per_year * (year_plus - 1));
+
     //println("");
     //println("create virtual scene, year: " + (scenes.get(scenes.size() - 1).year + year_plus) );
-    Scene new_scene = create_virtual_scene(scenes.get(scenes.size() - 1), parseInt(total), year_plus, change_new);
-
+    Scene new_scene = create_virtual_scene(last_scene, parseInt(total), year_plus, change_per_year);
+    total = last_total + (change_per_year * year_plus);
+    println(total);
     scenes.add(new_scene);
     index++;
   }
@@ -217,25 +226,41 @@ void correct_virtual_scene_totals(int up_year) {
     if (scene.year > up_year) {
       long total = scene.total;
       long child_total = 0;
+
       for (Scene child_scene: scene.child_scenes) {
         child_total += child_scene.total;
+
       }
+      // println("child_total: " + child_total);
 
       if (total != child_total) {
-        int diff_per_child = 0;
+        float diff_per_child = 0;
+        int diff = parseInt(total - child_total);
 
-        if (total < child_total) {
-          long diff = child_total - total;
-          diff_per_child = parseInt(diff / scene.child_scenes.size());
-          diff_per_child = diff_per_child * -1;
-        } else {
-          long diff = total - child_total;
-          diff_per_child = parseInt(diff / scene.child_scenes.size());
+        while(diff != 0) {
+          int all_zeros = 0;
+          // println(diff);
+          for (Scene child_scene: scene.child_scenes) {
+              if (diff < 0 && child_scene.total > 0) {
+                child_scene.total -= 1;
+                diff += 1;
+              } else if(diff > 0) {
+                diff -= 1;
+              }
+          }
+
+          if (all_zeros == scene.child_scenes.size()) break;
         }
 
         for (Scene child_scene: scene.child_scenes) {
-          child_scene.total += diff_per_child;
-          if (child_scene.total < 0) child_scene.total = 0;
+          if (child_scene.total + child_scene.change < 0) child_scene.change = child_scene.total * -1;
+          println("");
+          println("year " + child_scene.year);
+          println("name " + child_scene.name);
+          println("total " + child_scene.total);
+          println("change " + child_scene.change);
+          //println("last data change " + change);
+          //println("last data total " + total);
         }
       }
     }
@@ -245,9 +270,12 @@ void correct_virtual_scene_totals(int up_year) {
 Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int change_per_year) {
   Scene scene = new Scene(previous_scene.id + 1);
 
+  int total_change = change_per_year * year_jump;
   if (total < 0) {
     total = 0;
   }
+
+  if ((total + total_change) < 0) total_change = parseInt(total * -1);
 
 
   scene.set_name(previous_scene.name);
@@ -256,9 +284,10 @@ Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int c
   scene.set_total(total);
   scene.set_increase(previous_scene.increase * year_jump);
   scene.set_migration(previous_scene.migration * year_jump);
-  scene.set_change(change_per_year * year_jump);
+  scene.set_change(total_change);
 
   int change_total_by_regions = 0;
+
   for(Scene child_scene: previous_scene.child_scenes) {
     Region region = get_region_by_name(child_scene.name);
     int child_change_per_year = region.get_change_per_year();
@@ -267,20 +296,14 @@ Scene create_virtual_scene(Scene previous_scene, int total, int year_jump, int c
     long child_total = region.total + change;
 
     if (total == 0) child_total = 0;
-    //println("");
-    //println("name: " + region.name);
-    //println("change: " + change);
-    //println("region total: " + region.total);
-    //println("total: " + child_total);
+    // println("");
+    // println("name: " + region.name);
+    // println("change: " + change);
+    // println("region total: " + region.total);
+    // println("total: " + child_total);
     scene.add_child_scene(create_virtual_scene(region.last_scene, parseInt(child_total), year_jump, child_change_per_year));
     //region.total = region.total;
     change_total_by_regions += change;
-  }
-
-  if (previous_scene.parent.length() == 0) {
-    //println("percent " + percents);
-    //println("LV total change per year: " + change_per_year * year_jump);
-    //println("Regions total change per year: " + change_total_by_regions);
   }
 
   return scene;
@@ -422,8 +445,9 @@ void draw_labels() {
 
 
 void process_active_scene_data() {
-  boolean remove = (active_scene.change < 0);
+  boolean remove = (active_scene.change <= 0);
   int changable_dots = abs(parseInt(active_scene.change) / parseInt(people_per_dot));
+  if (abs(active_scene.change) < people_per_dot) changable_dots = 1;
 
 
   ArrayList<Dot> available_dots = new ArrayList<Dot>();
@@ -437,18 +461,12 @@ void process_active_scene_data() {
   if (available_dots.size() < changable_dots) changable_dots = available_dots.size();
   if (scenes.size() - 1 == active_scene_index) changable_dots = available_dots.size();
 
-  //println("");
-  //println("scene year: " + active_scene.year);
-  //println("scene index: " + active_scene_index + "  scenes size: " + (scenes.size() - 1));
-  //println("scene change: " + active_scene.change);
-  //println("scene total: " + active_scene.total);
-  //println("total changable dots: " + changable_dots);
-  //println("total available dots: " + available_dots.size());
 
   if (active_scene.child_scenes.size() != 0) {
     for( Scene child_scene: active_scene.child_scenes) {
-      boolean child_remove = (child_scene.change < 0);
+      boolean child_remove = (child_scene.change <= 0);
       int child_changable_dots = abs(parseInt(child_scene.change / people_per_dot));
+      if (abs(child_scene.change) < people_per_dot) child_changable_dots = 1;
 
       //println("--- scene name: " + child_scene.name);
       //println("child scene change: " + child_scene.change);
@@ -500,26 +518,28 @@ void process_active_scene_data() {
     }
   }
 
-  while (changable_dots > 0) {
-    int dot_index = parseInt(random(0, available_dots.size()));
-    boolean decrease = false;
-    if(remove) {
-      if (available_dots.get(dot_index).disapear == 0) {
-        available_dots.get(dot_index).disapear = 1;
-        available_dots.get(dot_index).animation_done = true;
-        decrease = true;
-        ////println("disapear "+ dots.get(dot_index).disapear);
+  if (scenes.size() - 10 <= active_scene_index) {
+    while (changable_dots > 0) {
+      int dot_index = parseInt(random(0, available_dots.size()));
+      boolean decrease = false;
+      if(remove) {
+        if (available_dots.get(dot_index).disapear == 0) {
+          available_dots.get(dot_index).disapear = 1;
+          available_dots.get(dot_index).animation_done = true;
+          decrease = true;
+          ////println("disapear "+ dots.get(dot_index).disapear);
+        }
+      } else {
+        if( available_dots.get(dot_index).reapear  == 0) {
+          // TODO: get disapear list
+          available_dots.get(dot_index).reapear = 1;
+          available_dots.get(dot_index).animation_done = true;
+          decrease = true;
+        }
       }
-    } else {
-      if( available_dots.get(dot_index).reapear  == 0) {
-        // TODO: get disapear list
-        available_dots.get(dot_index).reapear = 1;
-        available_dots.get(dot_index).animation_done = true;
-        decrease = true;
-      }
-    }
 
-    if (decrease) changable_dots --;
+      if (decrease) changable_dots --;
+    }
   }
 
   active_scene.start();
@@ -565,6 +585,7 @@ void load_next_scene() {
         break;
       }
     }
+
     if (!is_playing) {
       next_active_scene_index = 0;
       Ani.killAll();
@@ -573,6 +594,7 @@ void load_next_scene() {
       }
       set_active_scene(next_active_scene_index);
     }
+
   } else {
     set_active_scene(next_active_scene_index);
   }
@@ -702,7 +724,7 @@ class Region {
 
   int get_change_per_year() {
     int average_data = parseInt(this.average / this.average_cnt);
-    return parseInt(average_data / 2 - (average_data / 100 * percents));
+    return average_data;
   }
 
   void set_label_position(int x, int y, int font_size) {
@@ -911,7 +933,7 @@ class Dot {
   public void reapear() {
     this.reapear = 1;
     this.disapear = 0;
-    
+
     try {
       this.target = this.orignal;
       zAnim = new Ani(this, duration, the_delay, "z", orignal.z, Ani.QUAD_OUT, "onEnd:finish_anim");
